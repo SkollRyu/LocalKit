@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resample — PDF size reduction with a paper trail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#E2E6E2;
+  --panel:#FBFBF9;
+  --ink:#161C1A;
+  --ink-soft:#5B6764;
+  --rule:#C6CDC8;
+  --pine:#0B5D51;
+  --amber:#9C6A16;
+  --delta:#8E2F5C;
+  --shadow:0 1px 0 rgba(22,28,26,.06), 0 12px 28px -18px rgba(22,28,26,.5);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+/* ---------- masthead ---------- */
+.masthead{padding:44px 0 26px}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--pine);margin:0 0 14px
+}
+.masthead h1{
+  font-family:"Bricolage Grotesque",sans-serif;
+  font-weight:800;font-size:clamp(38px,6.5vw,66px);line-height:.95;
+  letter-spacing:-.028em;margin:0 0 16px;max-width:15ch;
+}
+.masthead h1 em{font-style:normal;color:var(--pine)}
+.standfirst{margin:0;max-width:62ch;color:var(--ink-soft);font-size:16px}
+.standfirst strong{color:var(--ink);font-weight:600}
+
+/* ---------- layout ---------- */
+.deck{display:grid;grid-template-columns:340px minmax(0,1fr);gap:22px;align-items:start;padding-bottom:60px}
+@media (max-width:940px){.deck{grid-template-columns:1fr}}
+
+.panel{
+  background:var(--panel);border:1px solid var(--rule);border-radius:3px;box-shadow:var(--shadow);
+}
+.panel-hd{
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  padding:13px 16px;border-bottom:1px solid var(--rule);
+}
+.panel-hd h2{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+  letter-spacing:.15em;text-transform:uppercase;margin:0;color:var(--ink)
+}
+.panel-hd span{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft)}
+.panel-bd{padding:16px}
+
+.controls{position:sticky;top:20px}
+@media (max-width:940px){.controls{position:static}}
+
+/* ---------- drop target ---------- */
+.drop{
+  border:1.5px dashed var(--rule);border-radius:3px;background:#fff;
+  padding:26px 18px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.drop:hover,.drop:focus-visible{border-color:var(--pine);background:#F7FAF8;outline:none}
+.drop.hot{border-color:var(--pine);background:#EDF4F1;border-style:solid}
+.drop-glyph{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  color:var(--pine);text-transform:uppercase;display:block;margin-bottom:8px
+}
+.drop-main{font-weight:600;display:block;margin-bottom:3px}
+.drop-sub{font-size:12.5px;color:var(--ink-soft)}
+
+/* ---------- sliders ---------- */
+.field{margin-top:22px}
+.field:first-child{margin-top:0}
+.field-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+.field-hd label{font-size:13px;font-weight:600}
+.field-val{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--pine);font-weight:500}
+.field-note{font-size:12px;color:var(--ink-soft);margin:0 0 9px;line-height:1.4}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;background:transparent;height:20px;margin:0}
+input[type=range]:focus-visible{outline:2px solid var(--pine);outline-offset:3px}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--pine);
+  border:2.5px solid var(--panel);box-shadow:0 0 0 1px var(--pine);margin-top:-6.5px;cursor:pointer
+}
+input[type=range]::-moz-range-thumb{
+  width:15px;height:15px;border-radius:50%;background:var(--pine);
+  border:2.5px solid var(--panel);box-shadow:0 0 0 1px var(--pine);cursor:pointer
+}
+.ticks{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-soft);margin-top:1px}
+
+.check{display:flex;gap:9px;align-items:flex-start;margin-top:11px;cursor:pointer;font-size:13px}
+.check input{margin:2px 0 0;accent-color:var(--pine);width:15px;height:15px;flex:none;cursor:pointer}
+.check span small{display:block;color:var(--ink-soft);font-size:12px;line-height:1.4}
+
+.divider{height:1px;background:var(--rule);margin:20px 0}
+
+.btn{
+  width:100%;font-family:"IBM Plex Sans",sans-serif;font-size:14px;font-weight:600;
+  padding:11px 16px;border-radius:3px;border:1px solid var(--pine);
+  background:var(--pine);color:#F4F8F6;cursor:pointer;transition:opacity .15s
+}
+.btn:hover:not(:disabled){opacity:.87}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--pine);margin-top:8px}
+
+/* ---------- readout ---------- */
+.empty{padding:8px 4px 4px}
+.empty h3{font-family:"Bricolage Grotesque",sans-serif;font-size:19px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em}
+.empty p{margin:0 0 20px;color:var(--ink-soft);max-width:60ch;font-size:14px}
+.legend{border-top:1px solid var(--rule)}
+.legend-row{display:grid;grid-template-columns:130px minmax(0,1fr);gap:14px;padding:10px 0;border-bottom:1px solid var(--rule);font-size:13.5px}
+.legend-row dt{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--pine);padding-top:1px}
+.legend-row dd{margin:0;color:var(--ink-soft)}
+
+/* ---------- scoreboard ---------- */
+.score{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-bottom:1px solid var(--rule)}
+.score div{padding:15px 16px;border-right:1px solid var(--rule)}
+.score div:last-child{border-right:none}
+.score dt{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px}
+.score dd{margin:0;font-family:"IBM Plex Mono",monospace;font-size:23px;font-weight:500;letter-spacing:-.02em;line-height:1.1}
+.score dd small{font-size:12px;color:var(--ink-soft);font-weight:400;display:block;margin-top:3px;letter-spacing:0}
+.score .win dd{color:var(--delta)}
+
+.bar{height:6px;background:var(--rule);display:flex;border-bottom:1px solid var(--rule)}
+.bar i{display:block;height:100%}
+.bar .b-img{background:var(--delta)}
+.bar .b-str{background:var(--pine)}
+.barkey{display:flex;gap:16px;padding:9px 16px;border-bottom:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);flex-wrap:wrap}
+.barkey b{font-weight:500;color:var(--ink)}
+.swatch{display:inline-block;width:8px;height:8px;margin-right:6px;vertical-align:baseline}
+.sw-img{background:var(--delta)}
+.sw-str{background:var(--pine)}
+.sw-keep{background:var(--rule)}
+
+/* ---------- ledger ---------- */
+.ledger{width:100%;border-collapse:collapse;font-family:"IBM Plex Mono",monospace;font-size:12px}
+.ledger th{
+  text-align:left;font-weight:500;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft);padding:9px 10px;border-bottom:1px solid var(--rule);white-space:nowrap;position:sticky;top:0;background:var(--panel)
+}
+.ledger td{padding:7px 10px;border-bottom:1px solid #E9ECE9;vertical-align:middle;white-space:nowrap}
+.ledger .num{text-align:right;font-variant-numeric:tabular-nums}
+.ledger tbody tr.clickable{cursor:pointer}
+.ledger tbody tr.clickable:hover{background:#F1F5F2}
+.ledger tbody tr.sel{background:#EAF2EE}
+.scroller{max-height:460px;overflow:auto}
+
+.dpi{display:flex;align-items:center;gap:7px}
+.dpi-track{width:56px;height:4px;background:var(--rule);position:relative;flex:none}
+.dpi-fill{height:100%;background:var(--ink-soft);display:block}
+.dpi-fill.over{background:var(--delta)}
+.dpi-tick{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--pine)}
+
+.tag{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:2px;border:1px solid}
+.t-cut{color:var(--delta);border-color:#DDBDCC;background:#FBF2F6}
+.t-keep{color:var(--ink-soft);border-color:var(--rule);background:#F2F4F2}
+.t-skip{color:var(--amber);border-color:#E3D0AC;background:#FBF6EC}
+.gain{color:var(--delta);font-weight:500}
+
+/* ---------- proof ---------- */
+.proof{border-top:1px solid var(--rule);padding:16px}
+.proof-hd{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.proof-hd h3{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;margin:0}
+.proof-hd p{margin:0;font-size:12.5px;color:var(--ink-soft)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:600px){.pair{grid-template-columns:1fr}}
+.pair figure{margin:0}
+.pair figcaption{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;display:flex;justify-content:space-between;gap:8px}
+.pair img{width:100%;display:block;border:1px solid var(--rule);background:#fff;image-rendering:auto}
+
+.log{margin:0;padding:12px 16px;border-top:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft)}
+.err{border-top:1px solid var(--rule);padding:14px 16px;background:#FBF2F6;color:var(--delta);font-size:13.5px}
+.err b{display:block;font-weight:600;margin-bottom:2px;color:var(--delta)}
+
+.progress{height:2px;background:var(--rule);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--pine);width:0;transition:width .2s}
+
+.foot{border-top:1px solid var(--rule);padding:22px 0 46px;color:var(--ink-soft);font-size:12.5px;max-width:76ch}
+.foot code{font-family:"IBM Plex Mono",monospace;font-size:12px;background:#EDEFED;padding:1px 4px;border-radius:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">Runs in this tab · nothing is uploaded</p>
+    <h1>Smaller PDFs, with the <em>receipts</em>.</h1>
+    <p class="standfirst">Most oversized PDFs are oversized for one reason: images stored at far higher resolution than they are ever drawn at. This tool finds every image, works out its <strong>effective DPI</strong> on the page, and resamples only the ones above your threshold. Text, vectors and fonts are left untouched — the document stays searchable and selectable. Every decision is listed below so you can check the cost.</p>
+  </header>
+
+  <div class="deck">
+
+    <!-- ======== CONTROLS ======== -->
+    <aside class="panel controls">
+      <div class="panel-hd"><h2>Settings</h2><span id="fileTag">no file</span></div>
+      <div class="panel-bd">
+
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose a PDF file">
+          <span class="drop-glyph">PDF in</span>
+          <span class="drop-main">Drop a file or click</span>
+          <span class="drop-sub">Stays on your device</span>
+        </div>
+        <input type="file" id="file" accept="application/pdf,.pdf" class="sr">
+
+        <div class="divider"></div>
+
+        <div class="field">
+          <div class="field-hd"><label for="dpi">Resolution ceiling</label><span class="field-val" id="dpiVal">150 DPI</span></div>
+          <p class="field-note">Images drawn at more than this are reduced to it. Anything already below is left exactly as it is.</p>
+          <input type="range" id="dpi" min="72" max="400" step="6" value="150">
+          <div class="ticks"><span>72 · screen</span><span>200</span><span>400 · print</span></div>
+        </div>
+
+        <div class="field">
+          <div class="field-hd"><label for="q">JPEG quality</label><span class="field-val" id="qVal">0.78</span></div>
+          <p class="field-note">Applied only to images that are being resampled anyway. Below about 0.6 you will start to see blocking on flat tones.</p>
+          <input type="range" id="q" min="0.3" max="0.95" step="0.01" value="0.78">
+          <div class="ticks"><span>0.30</span><span>0.62</span><span>0.95</span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <label class="check"><input type="checkbox" id="optGC" checked><span>Drop unreachable objects<small>Clears orphans left behind by incremental saves.</small></span></label>
+        <label class="check"><input type="checkbox" id="optMeta" checked><span>Strip metadata and thumbnails<small>Removes XMP, document info and page thumbnails.</small></span></label>
+        <label class="check"><input type="checkbox" id="optGuard" checked><span>Keep the original if it is smaller<small>Per image. Prevents re-encoding making things worse.</small></span></label>
+
+        <div class="divider"></div>
+
+        <button class="btn" id="go" disabled>Compress</button>
+        <button class="btn btn-ghost" id="dl" disabled>Download result</button>
+      </div>
+      <div class="progress"><i id="bar"></i></div>
+    </aside>
+
+    <!-- ======== READOUT ======== -->
+    <section class="panel">
+      <div class="panel-hd"><h2>Readout</h2><span id="stateTag">idle</span></div>
+
+      <div id="empty" class="panel-bd">
+        <div class="empty">
+          <h3>What the verdict column will say</h3>
+          <p>Every image object in the file gets one of these. Nothing is silently degraded, and several codecs are deliberately left alone because re-encoding them would cost quality and gain nothing.</p>
+          <dl class="legend">
+            <div class="legend-row"><dt>resampled</dt><dd>Drawn above the ceiling. Reduced to the target resolution and re-encoded as JPEG.</dd></div>
+            <div class="legend-row"><dt>under ceiling</dt><dd>Already at or below the target. Untouched — re-encoding it would only add generation loss.</dd></div>
+            <div class="legend-row"><dt>bilevel</dt><dd>A one-bit scan in CCITT G4 or JBIG2. JPEG would add ringing around the text <em>and</em> make the file bigger.</dd></div>
+            <div class="legend-row"><dt>masked</dt><dd>Uses colour-key masking or an inverted decode array, where changing the samples would break the transparency.</dd></div>
+            <div class="legend-row"><dt>unsupported</dt><dd>JPEG 2000, LZW or CMYK data the browser cannot decode reliably. Passed through as-is.</dd></div>
+            <div class="legend-row"><dt>no gain</dt><dd>Resampling was tried and came out larger. The original was put back.</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div id="results" hidden></div>
+      <div id="errBox" hidden class="err"></div>
+    </section>
+  </div>
+
+  <p class="foot">Built on <code>pdf-lib</code> for object surgery and the browser's own JPEG encoder, with page content streams parsed to recover each image's placement matrix — that is how effective DPI is measured rather than guessed. Encrypted and password-protected files are declined rather than silently mangled. Large scans are held in memory a page at a time; a tab has a few gigabytes to play with, so extremely large files may still run out.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script>
+"use strict";
+(function(){
+
+/* ══════════════════════════════════════════════════════════════════
+   0. small utilities
+   ══════════════════════════════════════════════════════════════════ */
+
+const $ = id => document.getElementById(id);
+
+function fmtBytes(n){
+  if(n === null || n === undefined || isNaN(n)) return "—";
+  const neg = n < 0; n = Math.abs(n);
+  if(n < 1024) return (neg?"−":"") + n + " B";
+  if(n < 1024*1024) return (neg?"−":"") + (n/1024).toFixed(n/1024 < 10 ? 1 : 0) + " KB";
+  return (neg?"−":"") + (n/1048576).toFixed(n/1048576 < 10 ? 2 : 1) + " MB";
+}
+function pct(a, b){ return b > 0 ? Math.round(a/b*100) : 0; }
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function mkCanvas(w, h){
+  if(typeof OffscreenCanvas !== "undefined") return new OffscreenCanvas(w, h);
+  const c = document.createElement("canvas"); c.width = w; c.height = h; return c;
+}
+function canvasBlob(canvas, type, quality){
+  if(canvas.convertToBlob) return canvas.convertToBlob({ type, quality });
+  return new Promise(res => canvas.toBlob(res, type, quality));
+}
+
+/* zlib in / out via the platform, no dependency */
+async function inflate(bytes){
+  const tries = ["deflate", "deflate-raw"];
+  let last;
+  for(const fmt of tries){
+    try{
+      const ds = new DecompressionStream(fmt);
+      const stream = new Blob([bytes]).stream().pipeThrough(ds);
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }catch(e){ last = e; }
+  }
+  throw last || new Error("inflate failed");
+}
+async function deflate(bytes){
+  const cs = new CompressionStream("deflate");
+  const stream = new Blob([bytes]).stream().pipeThrough(cs);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   1. pdf-lib object helpers
+   ══════════════════════════════════════════════════════════════════ */
+
+const PL = window.PDFLib || {};
+const { PDFDocument, PDFName, PDFArray, PDFDict, PDFRawStream, PDFRef, PDFStream, PDFNumber } = PL;
+
+/* PDFName -> plain string, defensively (toString always yields "/Foo") */
+function nameStr(o){
+  if(o == null) return null;
+  const s = String(o);
+  return s.charAt(0) === "/" ? s.slice(1) : s;
+}
+function num(o){
+  if(o == null) return null;
+  if(typeof o.asNumber === "function") return o.asNumber();
+  const n = Number(String(o));
+  return isNaN(n) ? null : n;
+}
+function look(ctx, o){
+  try{ return o instanceof PDFRef ? ctx.lookup(o) : o; }catch(e){ return null; }
+}
+function dget(ctx, dict, key){
+  if(!dict || typeof dict.get !== "function") return null;
+  return look(ctx, dict.get(PDFName.of(key)));
+}
+function dictOf(obj){
+  if(!obj) return null;
+  if(obj.dict) return obj.dict;                 // PDFStream / PDFRawStream
+  if(typeof obj.entries === "function") return obj;  // PDFDict
+  return null;
+}
+/* /Filter and /DecodeParms normalised to parallel arrays */
+function filterChain(ctx, dict){
+  const f = dget(ctx, dict, "Filter");
+  const p = dget(ctx, dict, "DecodeParms") || dget(ctx, dict, "DP");
+  let filters = [], parms = [];
+  if(f instanceof PDFArray){ for(let i = 0; i < f.size(); i++) filters.push(nameStr(look(ctx, f.get(i)))); }
+  else if(f) filters.push(nameStr(f));
+  if(p instanceof PDFArray){ for(let i = 0; i < p.size(); i++) parms.push(look(ctx, p.get(i))); }
+  else if(p) parms.push(p);
+  return { filters, parms };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   2. stream decoding: flate + predictors
+   ══════════════════════════════════════════════════════════════════ */
+
+function undoPNGPredictor(data, colors, bpc, columns){
+  const bpp = Math.max(1, Math.ceil(colors * bpc / 8));
+  const rowLen = Math.ceil(colors * bpc * columns / 8);
+  const rows = Math.floor(data.length / (rowLen + 1));
+  const out = new Uint8Array(rows * rowLen);
+  let prev = new Uint8Array(rowLen);
+  for(let r = 0; r < rows; r++){
+    const ft = data[r * (rowLen + 1)];
+    const src = data.subarray(r * (rowLen + 1) + 1, r * (rowLen + 1) + 1 + rowLen);
+    const cur = out.subarray(r * rowLen, (r + 1) * rowLen);
+    cur.set(src);
+    for(let i = 0; i < rowLen; i++){
+      const a = i >= bpp ? cur[i - bpp] : 0, b = prev[i], c = i >= bpp ? prev[i - bpp] : 0;
+      switch(ft){
+        case 0: break;
+        case 1: cur[i] = (cur[i] + a) & 255; break;
+        case 2: cur[i] = (cur[i] + b) & 255; break;
+        case 3: cur[i] = (cur[i] + ((a + b) >> 1)) & 255; break;
+        case 4: {
+          const pp = a + b - c, pa = Math.abs(pp - a), pb = Math.abs(pp - b), pc = Math.abs(pp - c);
+          cur[i] = (cur[i] + (pa <= pb && pa <= pc ? a : pb <= pc ? b : c)) & 255; break;
+        }
+        default: break;
+      }
+    }
+    prev = cur;
+  }
+  return out;
+}
+function undoTIFFPredictor(data, colors, bpc, columns){
+  if(bpc !== 8) return data;
+  const rowLen = colors * columns;
+  for(let r = 0; r + rowLen <= data.length; r += rowLen)
+    for(let i = colors; i < rowLen; i++) data[r + i] = (data[r + i] + data[r + i - colors]) & 255;
+  return data;
+}
+async function decodeFlate(ctx, raw, parms){
+  let out = await inflate(raw);
+  if(parms){
+    const pred = num(dget(ctx, parms, "Predictor")) || 1;
+    if(pred >= 10) out = undoPNGPredictor(out, num(dget(ctx,parms,"Colors")) || 1, num(dget(ctx,parms,"BitsPerComponent")) || 8, num(dget(ctx,parms,"Columns")) || 1);
+    else if(pred === 2) out = undoTIFFPredictor(out, num(dget(ctx,parms,"Colors")) || 1, num(dget(ctx,parms,"BitsPerComponent")) || 8, num(dget(ctx,parms,"Columns")) || 1);
+  }
+  return out;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   3. content stream scanner — recovers the placement matrix per image
+      This is what turns "pixel dimensions" into "effective DPI".
+   ══════════════════════════════════════════════════════════════════ */
+
+const WS = c => c===0||c===9||c===10||c===12||c===13||c===32;
+const DELIM = c => c===0x28||c===0x29||c===0x3c||c===0x3e||c===0x5b||c===0x5d||c===0x7b||c===0x7d||c===0x2f||c===0x25;
+
+function* scan(buf){
+  let i = 0; const n = buf.length;
+  while(i < n){
+    const c = buf[i];
+    if(WS(c)){ i++; continue; }
+    if(c === 0x25){ while(i < n && buf[i] !== 10 && buf[i] !== 13) i++; continue; }        // comment
+    if(c === 0x2f){                                                                        // /Name
+      i++; let s = "";
+      while(i < n && !WS(buf[i]) && !DELIM(buf[i])){
+        if(buf[i] === 0x23 && i + 2 < n){ s += String.fromCharCode(parseInt(String.fromCharCode(buf[i+1], buf[i+2]), 16) || 0); i += 3; }
+        else s += String.fromCharCode(buf[i++]);
+      }
+      yield { t: "name", v: s }; continue;
+    }
+    if(c === 0x28){                                                                        // (string)
+      i++; let d = 1;
+      while(i < n && d > 0){
+        if(buf[i] === 0x5c){ i += 2; continue; }
+        if(buf[i] === 0x28) d++; else if(buf[i] === 0x29) d--;
+        i++;
+      }
+      yield { t: "other" }; continue;
+    }
+    if(c === 0x3c){
+      if(buf[i+1] === 0x3c){ i += 2; yield { t: "op", v: "<<" }; continue; }
+      i++; while(i < n && buf[i] !== 0x3e) i++; i++; yield { t: "other" }; continue;        // <hex>
+    }
+    if(c === 0x3e && buf[i+1] === 0x3e){ i += 2; yield { t: "op", v: ">>" }; continue; }
+    if(c === 0x5b || c === 0x5d || c === 0x7b || c === 0x7d){ i++; yield { t: "other" }; continue; }
+    let s = "";
+    while(i < n && !WS(buf[i]) && !DELIM(buf[i])) s += String.fromCharCode(buf[i++]);
+    if(s === "") { i++; continue; }
+    if(/^[+-]?(\d+\.?\d*|\.\d+)$/.test(s)){ yield { t: "num", v: parseFloat(s) }; continue; }
+    if(s === "BI"){                                                                        // inline image: skip to EI
+      let j = i;
+      while(j < n - 1){
+        if(buf[j] === 0x45 && buf[j+1] === 0x49 && (j === 0 || WS(buf[j-1])) && (j + 2 >= n || WS(buf[j+2]) || DELIM(buf[j+2]))) break;
+        j++;
+      }
+      i = Math.min(n, j + 2);
+      yield { t: "op", v: "INLINE" }; continue;
+    }
+    yield { t: "op", v: s };
+  }
+}
+
+/* CTM' = m × CTM  (matrices as [a,b,c,d,e,f]) */
+function mul(m, t){
+  return [
+    m[0]*t[0] + m[1]*t[2],
+    m[0]*t[1] + m[1]*t[3],
+    m[2]*t[0] + m[3]*t[2],
+    m[2]*t[1] + m[3]*t[3],
+    m[4]*t[0] + m[5]*t[2] + t[4],
+    m[4]*t[1] + m[5]*t[3] + t[5]
+  ];
+}
+
+/* Walks a content stream, recording the largest drawn size for each image ref.
+   Recurses one level per nested Form XObject. */
+async function walkContent(ctx, content, resources, ctm, usage, depth, seen){
+  if(depth > 6 || !content) return;
+  const xo = dget(ctx, resources, "XObject");
+  let stack = [], ops = [];
+
+  for(const tk of scan(content)){
+    if(tk.t === "num" || tk.t === "name"){ ops.push(tk); if(ops.length > 8) ops.shift(); continue; }
+    if(tk.t === "other"){ ops.length = 0; continue; }
+    const op = tk.v;
+
+    if(op === "q"){ stack.push(ctm.slice()); }
+    else if(op === "Q"){ if(stack.length) ctm = stack.pop(); }
+    else if(op === "cm"){
+      const n6 = ops.filter(o => o.t === "num").slice(-6).map(o => o.v);
+      if(n6.length === 6) ctm = mul(n6, ctm);
+    }
+    else if(op === "Do" && xo){
+      const nm = ops.length && ops[ops.length-1].t === "name" ? ops[ops.length-1].v : null;
+      if(nm){
+        const ref = xo.get ? xo.get(PDFName.of(nm)) : null;
+        const obj = look(ctx, ref);
+        const d = dictOf(obj);
+        const sub = d ? nameStr(dget(ctx, d, "Subtype")) : null;
+        if(sub === "Image" && ref instanceof PDFRef){
+          const w = Math.hypot(ctm[0], ctm[1]), h = Math.hypot(ctm[2], ctm[3]);
+          const key = ref.tag;
+          const cur = usage.get(key) || { w: 0, h: 0, uses: 0 };
+          cur.w = Math.max(cur.w, w); cur.h = Math.max(cur.h, h); cur.uses++;
+          usage.set(key, cur);
+        } else if(sub === "Form" && ref instanceof PDFRef && !seen.has(ref.tag)){
+          seen.add(ref.tag);
+          let inner = ctm;
+          const mx = dget(ctx, d, "Matrix");
+          if(mx instanceof PDFArray && mx.size() === 6){
+            const m = []; for(let i = 0; i < 6; i++) m.push(num(look(ctx, mx.get(i))) || 0);
+            inner = mul(m, ctm);
+          }
+          const bytes = await streamBytes(ctx, obj);
+          const res2 = dget(ctx, d, "Resources") || resources;
+          if(bytes) await walkContent(ctx, bytes, res2, inner, usage, depth + 1, seen);
+          seen.delete(ref.tag);
+        }
+      }
+    }
+    ops.length = 0;
+  }
+}
+
+/* decoded bytes of any flate-or-plain stream (content streams, forms) */
+async function streamBytes(ctx, obj){
+  if(!obj || !obj.contents) return null;
+  const { filters, parms } = filterChain(ctx, obj.dict);
+  let data = obj.contents;
+  try{
+    for(let i = 0; i < filters.length; i++){
+      if(filters[i] === "FlateDecode") data = await decodeFlate(ctx, data, parms[i]);
+      else return null;
+    }
+  }catch(e){ return null; }
+  return data;
+}
+
+async function pageContent(ctx, pageDict){
+  const c = dget(ctx, pageDict, "Contents");
+  const parts = [];
+  /* /Contents is a stream or an array of streams; some producers nest arrays,
+     so flatten rather than dropping the branch on the floor */
+  const take = async (node, depth) => {
+    if(!node || depth > 3) return;
+    if(node instanceof PDFArray){
+      for(let i = 0; i < node.size(); i++) await take(look(ctx, node.get(i)), depth + 1);
+      return;
+    }
+    const b = await streamBytes(ctx, node);
+    if(b) parts.push(b, new Uint8Array([10]));
+  };
+  await take(c, 0);
+  if(!parts.length) return null;
+  const total = parts.reduce((a, p) => a + p.length, 0);
+  const out = new Uint8Array(total);
+  let o = 0; for(const p of parts){ out.set(p, o); o += p.length; }
+  return out;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   4. colour space + image decoding
+   ══════════════════════════════════════════════════════════════════ */
+
+function resolveCS(ctx, cs, depth){
+  depth = depth || 0;
+  if(!cs || depth > 4) return { kind: "unknown", comps: 0 };
+  if(cs instanceof PDFArray){
+    const family = nameStr(look(ctx, cs.get(0)));
+    if(family === "ICCBased"){
+      const st = look(ctx, cs.get(1));
+      const n = st ? num(dget(ctx, st.dict, "N")) : null;
+      return { kind: n === 1 ? "gray" : n === 4 ? "cmyk" : "rgb", comps: n || 3 };
+    }
+    if(family === "Indexed"){
+      const base = resolveCS(ctx, look(ctx, cs.get(1)), depth + 1);
+      const lut = look(ctx, cs.get(3));
+      let palette = null;
+      if(lut && lut.contents) palette = { stream: lut };
+      else if(lut && typeof lut.asBytes === "function") palette = { bytes: lut.asBytes() };
+      return { kind: "indexed", comps: 1, base, palette };
+    }
+    if(family === "CalRGB" || family === "Lab") return { kind: "rgb", comps: 3 };
+    if(family === "CalGray") return { kind: "gray", comps: 1 };
+    if(family === "DeviceN" || family === "Separation") return { kind: "other", comps: 1 };
+    return { kind: "other", comps: 0 };
+  }
+  const n = nameStr(cs);
+  if(n === "DeviceRGB") return { kind: "rgb", comps: 3 };
+  if(n === "DeviceGray") return { kind: "gray", comps: 1 };
+  if(n === "DeviceCMYK") return { kind: "cmyk", comps: 4 };
+  return { kind: "unknown", comps: 0 };
+}
+
+/* component count straight out of the JPEG's SOF marker — more trustworthy
+   than the PDF dictionary, and tells us whether it is CMYK */
+function jpegSOF(b){
+  let i = 2;
+  while(i < b.length - 9){
+    if(b[i] !== 0xFF){ i++; continue; }
+    const m = b[i+1];
+    if(m === 0xD8 || m === 0x01 || (m >= 0xD0 && m <= 0xD7)){ i += 2; continue; }
+    const len = (b[i+2] << 8) | b[i+3];
+    if(m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC){
+      return { comps: b[i+9], progressive: m === 0xC2 };
+    }
+    i += 2 + len;
+  }
+  return { comps: 3, progressive: false };
+}
+
+/* raw samples -> ImageData (RGBA) */
+async function samplesToImageData(ctx, data, w, h, bpc, cs){
+  const px = new Uint8ClampedArray(w * h * 4);
+  const readBits = (row, x, comp, comps) => {
+    if(bpc === 8) return data[row * comps * w + x * comps + comp];
+    const bitsPerRow = Math.ceil(w * comps * bpc / 8) * 8;
+    const bit = row * bitsPerRow + (x * comps + comp) * bpc;
+    const byte = data[bit >> 3];
+    if(byte === undefined) return 0;
+    const shift = 8 - bpc - (bit & 7);
+    return (byte >> shift) & ((1 << bpc) - 1);
+  };
+
+  if(cs.kind === "rgb" && bpc === 8){
+    const rowLen = w * 3;
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+      const s = y * rowLen + x * 3, d = (y * w + x) * 4;
+      px[d] = data[s]; px[d+1] = data[s+1]; px[d+2] = data[s+2]; px[d+3] = 255;
+    }
+  } else if(cs.kind === "gray"){
+    const max = (1 << bpc) - 1;
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+      const v = bpc === 8 ? data[y * w + x] : Math.round(readBits(y, x, 0, 1) / max * 255);
+      const d = (y * w + x) * 4;
+      px[d] = px[d+1] = px[d+2] = v; px[d+3] = 255;
+    }
+  } else if(cs.kind === "indexed"){
+    let pal = null;
+    if(cs.palette && cs.palette.bytes) pal = cs.palette.bytes;
+    else if(cs.palette && cs.palette.stream) pal = await streamBytes(ctx, cs.palette.stream);
+    if(!pal) return null;
+    const bc = cs.base.kind === "rgb" ? 3 : cs.base.kind === "gray" ? 1 : cs.base.kind === "cmyk" ? 4 : 0;
+    if(!bc) return null;
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+      const idx = readBits(y, x, 0, 1) * bc, d = (y * w + x) * 4;
+      if(bc === 3){ px[d] = pal[idx]; px[d+1] = pal[idx+1]; px[d+2] = pal[idx+2]; }
+      else if(bc === 1){ px[d] = px[d+1] = px[d+2] = pal[idx]; }
+      else {
+        const k = pal[idx+3] / 255;
+        px[d]   = 255 * (1 - pal[idx]/255)   * (1 - k);
+        px[d+1] = 255 * (1 - pal[idx+1]/255) * (1 - k);
+        px[d+2] = 255 * (1 - pal[idx+2]/255) * (1 - k);
+      }
+      px[d+3] = 255;
+    }
+  } else return null;
+
+  return new ImageData(px, w, h);
+}
+
+/* stepped halving, then a final high-quality draw — much cleaner than one big shrink */
+function downsample(source, sw, sh, tw, th){
+  let cur = source, cw = sw, ch = sh;
+  while(cw > tw * 2 && ch > th * 2){
+    const nw = Math.max(tw, cw >> 1), nh = Math.max(th, ch >> 1);
+    const c = mkCanvas(nw, nh), g = c.getContext("2d");
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+    g.drawImage(cur, 0, 0, cw, ch, 0, 0, nw, nh);
+    cur = c; cw = nw; ch = nh;
+  }
+  const out = mkCanvas(tw, th), g = out.getContext("2d");
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+  g.fillStyle = "#fff"; g.fillRect(0, 0, tw, th);
+  g.drawImage(cur, 0, 0, cw, ch, 0, 0, tw, th);
+  return out;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   5. the pipeline
+   ══════════════════════════════════════════════════════════════════ */
+
+const PREVIEW_BUDGET = 10;
+
+async function compress(bytes, opts, report){
+  if(!PDFDocument) throw new Error("pdf-lib did not load. Check the network connection and reload.");
+
+  let doc;
+  try{
+    doc = await PDFDocument.load(bytes, { updateMetadata: false, throwOnInvalidObject: false });
+  }catch(e){
+    if(/encrypt/i.test(e.message || "")) throw new Error("This PDF is encrypted. Remove the password first — decoding it here would corrupt the streams.");
+    throw new Error("Could not parse this PDF: " + (e.message || e));
+  }
+  const ctx = doc.context;
+  if(ctx.trailerInfo && ctx.trailerInfo.Encrypt)
+    throw new Error("This PDF is encrypted. Remove the password first — decoding it here would corrupt the streams.");
+
+  /* --- inventory every image object --- */
+  report("Cataloguing objects");
+  const images = new Map();   // tag -> record
+  for(const [ref, obj] of ctx.enumerateIndirectObjects()){
+    if(!(obj instanceof PDFRawStream)) continue;
+    const d = obj.dict;
+    if(nameStr(dget(ctx, d, "Subtype")) !== "Image") continue;
+    images.set(ref.tag, {
+      ref, obj,
+      w: num(dget(ctx, d, "Width")) || 0,
+      h: num(dget(ctx, d, "Height")) || 0,
+      bytes: obj.contents ? obj.contents.length : 0
+    });
+  }
+
+  /* --- measure how big each one is actually drawn --- */
+  report("Measuring placement on the page");
+  const usage = new Map();
+  const pages = doc.getPages();
+  for(let i = 0; i < pages.length; i++){
+    const pd = pages[i].node;
+    let content = null;
+    try{ content = await pageContent(ctx, pd); }catch(e){}
+    const res = dget(ctx, pd, "Resources");
+    if(content && res){
+      try{ await walkContent(ctx, content, res, [1,0,0,1,0,0], usage, 0, new Set()); }catch(e){}
+    }
+    // conservative fallback: assume any unplaced image fills the page box
+    const mb = dget(ctx, pd, "MediaBox");
+    if(mb instanceof PDFArray && mb.size() === 4){
+      const pw = Math.abs((num(look(ctx,mb.get(2)))||612) - (num(look(ctx,mb.get(0)))||0));
+      const ph = Math.abs((num(look(ctx,mb.get(3)))||792) - (num(look(ctx,mb.get(1)))||0));
+      pages[i]._box = [pw, ph];
+    }
+    if(i % 12 === 0) await new Promise(r => setTimeout(r, 0));
+  }
+  const fallbackBox = (pages[0] && pages[0]._box) || [612, 792];
+
+  /* --- decide and act, image by image --- */
+  const rows = [];
+  let imageSaved = 0, previews = 0, done = 0;
+  const targetDPI = opts.dpi, quality = opts.quality;
+
+  for(const rec of images.values()){
+    done++;
+    report("Resampling images", done / Math.max(1, images.size));
+    if(done % 4 === 0) await new Promise(r => setTimeout(r, 0));
+
+    const d = rec.obj.dict;
+    const { filters, parms } = filterChain(ctx, d);
+    const codec = filters[filters.length - 1] || "None";
+    const bpc = num(dget(ctx, d, "BitsPerComponent")) || 8;
+    const cs = resolveCS(ctx, dget(ctx, d, "ColorSpace"));
+    const u = usage.get(rec.ref.tag);
+    const drawnW = u && u.w > 0.5 ? u.w : fallbackBox[0];
+    const drawnH = u && u.h > 0.5 ? u.h : fallbackBox[1];
+    const dpi = rec.w / (drawnW / 72);
+    const dpiY = rec.h / (drawnH / 72);
+    const effDPI = Math.max(dpi, dpiY);
+
+    const row = {
+      name: "#" + rec.ref.objectNumber, w: rec.w, h: rec.h, codec,
+      dpi: effDPI, before: rec.bytes, after: rec.bytes, verdict: "keep", label: "under ceiling",
+      placed: !!u, preview: null, newW: rec.w, newH: rec.h
+    };
+    rows.push(row);
+
+    /* codecs and structures we deliberately do not touch */
+    if(bpc === 1 || codec === "CCITTFaxDecode" || codec === "JBIG2Decode"){ row.verdict = "skip"; row.label = "bilevel"; continue; }
+    if(codec === "JPXDecode" || codec === "LZWDecode"){ row.verdict = "skip"; row.label = "unsupported"; continue; }
+    if(d.get(PDFName.of("Mask")) || d.get(PDFName.of("Decode"))){ row.verdict = "skip"; row.label = "masked"; continue; }
+    if(cs.kind === "cmyk" || cs.kind === "other" || cs.kind === "unknown"){ row.verdict = "skip"; row.label = "unsupported"; continue; }
+    if(effDPI <= targetDPI * 1.08 || rec.w < 24 || rec.h < 24) continue;
+
+    const scale = Math.min(1, targetDPI / effDPI);
+    const tw = Math.max(8, Math.round(rec.w * scale)), th = Math.max(8, Math.round(rec.h * scale));
+
+    /* decode */
+    let source = null;
+    try{
+      if(codec === "DCTDecode"){
+        const sof = jpegSOF(rec.obj.contents);
+        if(sof.comps === 4){ row.verdict = "skip"; row.label = "unsupported"; continue; }
+        source = await createImageBitmap(new Blob([rec.obj.contents], { type: "image/jpeg" }));
+      } else if(codec === "FlateDecode" || codec === "None"){
+        let raw = rec.obj.contents;
+        if(codec === "FlateDecode") raw = await decodeFlate(ctx, raw, parms[filters.indexOf("FlateDecode")]);
+        const imgData = await samplesToImageData(ctx, raw, rec.w, rec.h, bpc, cs);
+        if(!imgData){ row.verdict = "skip"; row.label = "unsupported"; continue; }
+        const c = mkCanvas(rec.w, rec.h);
+        c.getContext("2d").putImageData(imgData, 0, 0);
+        source = c;
+      } else { row.verdict = "skip"; row.label = "unsupported"; continue; }
+    }catch(e){ row.verdict = "skip"; row.label = "unsupported"; continue; }
+
+    /* resample + encode */
+    let jpegBytes, newBitmap = null;
+    try{
+      const small = downsample(source, rec.w, rec.h, tw, th);
+      const blob = await canvasBlob(small, "image/jpeg", quality);
+      jpegBytes = new Uint8Array(await blob.arrayBuffer());
+      if(previews < PREVIEW_BUDGET) newBitmap = await createImageBitmap(blob);
+    }catch(e){ row.verdict = "skip"; row.label = "unsupported"; continue; }
+
+    if(opts.guard && jpegBytes.length >= rec.bytes){
+      row.verdict = "keep"; row.label = "no gain";
+      if(source.close) source.close();
+      continue;
+    }
+
+    /* an SMask travels with the image; resample it separately so alpha survives */
+    let smaskRef = d.get(PDFName.of("SMask"));
+    if(smaskRef instanceof PDFRef){
+      try{
+        const sm = ctx.lookup(smaskRef);
+        const smD = sm.dict;
+        const smChain = filterChain(ctx, smD);
+        const smW = num(dget(ctx, smD, "Width")), smH = num(dget(ctx, smD, "Height"));
+        const smBpc = num(dget(ctx, smD, "BitsPerComponent")) || 8;
+        if(smChain.filters[0] === "FlateDecode" && smBpc === 8 && smW > tw){
+          const rawA = await decodeFlate(ctx, sm.contents, smChain.parms[0]);
+          const idA = await samplesToImageData(ctx, rawA, smW, smH, 8, { kind: "gray", comps: 1 });
+          if(idA){
+            const ca = mkCanvas(smW, smH); ca.getContext("2d").putImageData(idA, 0, 0);
+            const sa = downsample(ca, smW, smH, tw, th);
+            const gg = sa.getContext("2d").getImageData(0, 0, tw, th).data;
+            const gray = new Uint8Array(tw * th);
+            for(let i = 0; i < tw * th; i++) gray[i] = gg[i * 4];
+            const packed = await deflate(gray);
+            const newSM = ctx.stream(packed, {
+              Type: "XObject", Subtype: "Image", Width: tw, Height: th,
+              ColorSpace: "DeviceGray", BitsPerComponent: 8, Filter: "FlateDecode"
+            });
+            imageSaved += Math.max(0, sm.contents.length - packed.length);
+            ctx.assign(smaskRef, newSM);
+          }
+        }
+      }catch(e){ /* leave the mask alone; the base image is still fine */ }
+    }
+
+    /* splice the new stream in over the old ref */
+    const sof = jpegSOF(jpegBytes);
+    const dict = {
+      Type: "XObject", Subtype: "Image", Width: tw, Height: th,
+      ColorSpace: sof.comps === 1 ? "DeviceGray" : "DeviceRGB",
+      BitsPerComponent: 8, Filter: "DCTDecode"
+    };
+    const newStream = ctx.stream(jpegBytes, dict);
+    if(smaskRef) newStream.dict.set(PDFName.of("SMask"), smaskRef);
+    ctx.assign(rec.ref, newStream);
+
+    imageSaved += rec.bytes - jpegBytes.length;
+    row.after = jpegBytes.length; row.verdict = "cut"; row.label = "resampled";
+    row.newW = tw; row.newH = th;
+
+    if(newBitmap && previews < PREVIEW_BUDGET){
+      try{ row.preview = await makePair(source, newBitmap, rec.w, rec.h, scale); previews++; }catch(e){}
+      newBitmap.close && newBitmap.close();
+    }
+    if(source.close) source.close();
+  }
+
+  /* --- structural work --- */
+  report("Rewriting the file structure");
+  if(opts.meta) stripMetadata(ctx, doc, pages);
+  if(opts.gc) sweep(ctx);
+
+  let out;
+  try{
+    out = await doc.save({ useObjectStreams: true, addDefaultPage: false });
+  }catch(e){
+    throw new Error("Rebuilding the file failed: " + (e.message || e) + " — try again with object sweeping switched off.");
+  }
+
+  return { out, rows, imageSaved, before: bytes.length, after: out.length, pages: pages.length };
+}
+
+function stripMetadata(ctx, doc, pages){
+  try{
+    const cat = doc.catalog;
+    cat.delete(PDFName.of("Metadata"));
+    cat.delete(PDFName.of("PieceInfo"));
+    const info = ctx.trailerInfo && ctx.trailerInfo.Info;
+    const infoD = info ? dictOf(look(ctx, info)) : null;
+    if(infoD) for(const [k] of infoD.entries()) if(nameStr(k) !== "Producer") infoD.delete(k);
+    for(const p of pages){
+      p.node.delete(PDFName.of("Thumb"));
+      p.node.delete(PDFName.of("PieceInfo"));
+      p.node.delete(PDFName.of("Metadata"));
+    }
+  }catch(e){}
+}
+
+/* reachability sweep — drops orphans left by incremental saves */
+function sweep(ctx){
+  try{
+    const keep = new Set();
+    const visit = (o, depth) => {
+      if(depth > 120 || o == null) return;
+      if(o instanceof PDFRef){
+        if(keep.has(o.tag)) return;
+        keep.add(o.tag);
+        visit(ctx.lookup(o), depth + 1); return;
+      }
+      if(o instanceof PDFArray){ for(let i = 0; i < o.size(); i++) visit(o.get(i), depth + 1); return; }
+      const d = dictOf(o);
+      if(d && typeof d.entries === "function") for(const [, v] of d.entries()) visit(v, depth + 1);
+    };
+    const t = ctx.trailerInfo || {};
+    visit(t.Root, 0); visit(t.Info, 0); visit(t.Encrypt, 0);
+    let dropped = 0;
+    for(const [ref] of ctx.enumerateIndirectObjects()){
+      if(!keep.has(ref.tag)){ ctx.delete(ref); dropped++; }
+    }
+    return dropped;
+  }catch(e){ return 0; }
+}
+
+/* centre crop of the original at native pixels, next to the same region
+   of the result blown back up to match — an honest 1:1 comparison */
+async function makePair(origSrc, newBmp, ow, oh, scale){
+  const S = Math.min(400, ow, oh);
+  const ox = Math.floor((ow - S) / 2), oy = Math.floor((oh - S) / 2);
+  const a = mkCanvas(S, S), ga = a.getContext("2d");
+  ga.drawImage(origSrc, ox, oy, S, S, 0, 0, S, S);
+  const b = mkCanvas(S, S), gb = b.getContext("2d");
+  gb.imageSmoothingEnabled = true; gb.imageSmoothingQuality = "high";
+  gb.drawImage(newBmp, ox * scale, oy * scale, S * scale, S * scale, 0, 0, S, S);
+  const [ba, bb] = await Promise.all([canvasBlob(a, "image/png"), canvasBlob(b, "image/png")]);
+  return { a: URL.createObjectURL(ba), b: URL.createObjectURL(bb), size: S };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   6. interface
+   ══════════════════════════════════════════════════════════════════ */
+
+let currentFile = null, resultBytes = null, lastRows = null;
+
+const drop = $("drop"), fileInput = $("file");
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); }});
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("hot"); }));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("hot"); }));
+drop.addEventListener("drop", e => { if(e.dataTransfer.files[0]) take(e.dataTransfer.files[0]); });
+fileInput.addEventListener("change", e => { if(e.target.files[0]) take(e.target.files[0]); });
+
+function take(f){
+  if(!/\.pdf$/i.test(f.name) && f.type !== "application/pdf"){ showError("That is not a PDF", "Pick a file ending in .pdf and try again."); return; }
+  currentFile = f; resultBytes = null;
+  $("fileTag").textContent = fmtBytes(f.size);
+  drop.querySelector(".drop-main").textContent = f.name.length > 30 ? f.name.slice(0, 27) + "…" : f.name;
+  drop.querySelector(".drop-sub").textContent = fmtBytes(f.size) + " · ready";
+  $("go").disabled = false; $("dl").disabled = true;
+  $("errBox").hidden = true;
+  $("stateTag").textContent = "ready";
+}
+
+$("dpi").addEventListener("input", e => $("dpiVal").textContent = e.target.value + " DPI");
+$("q").addEventListener("input", e => $("qVal").textContent = Number(e.target.value).toFixed(2));
+
+function showError(title, body){
+  const b = $("errBox");
+  b.innerHTML = "<b>" + esc(title) + "</b>" + esc(body);
+  b.hidden = false;
+  $("stateTag").textContent = "stopped";
+}
+
+$("go").addEventListener("click", async () => {
+  if(!currentFile) return;
+  $("go").disabled = true; $("dl").disabled = true;
+  $("errBox").hidden = true; $("empty").hidden = true;
+  $("results").hidden = false;
+  $("results").innerHTML = '<p class="log">Reading file…</p>';
+  $("stateTag").textContent = "working";
+
+  const opts = {
+    dpi: Number($("dpi").value),
+    quality: Number($("q").value),
+    gc: $("optGC").checked,
+    meta: $("optMeta").checked,
+    guard: $("optGuard").checked
+  };
+
+  const report = (msg, frac) => {
+    $("results").innerHTML = '<p class="log">' + esc(msg) + "…</p>";
+    $("bar").style.width = ((frac || 0.05) * 100).toFixed(0) + "%";
+  };
+
+  try{
+    const buf = new Uint8Array(await currentFile.arrayBuffer());
+    await new Promise(r => setTimeout(r, 30));
+    const res = await compress(buf, opts, report);
+    resultBytes = res.out; lastRows = res.rows;
+    $("bar").style.width = "100%";
+    render(res);
+    $("dl").disabled = false;
+    $("stateTag").textContent = "done";
+  }catch(e){
+    $("results").hidden = true; $("empty").hidden = false;
+    showError("Could not compress this file", e.message || String(e));
+    $("bar").style.width = "0";
+  }
+  $("go").disabled = false;
+});
+
+$("dl").addEventListener("click", () => {
+  if(!resultBytes) return;
+  const blob = new Blob([resultBytes], { type: "application/pdf" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = currentFile.name.replace(/\.pdf$/i, "") + "-compressed.pdf";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+
+function render(res){
+  const saved = res.before - res.after;
+  const structural = Math.max(0, saved - res.imageSaved);
+  const imgPart = saved > 0 ? Math.max(0, Math.min(100, res.imageSaved / saved * 100)) : 0;
+  const strPart = saved > 0 ? Math.max(0, 100 - imgPart) : 0;
+  const cuts = res.rows.filter(r => r.verdict === "cut").length;
+
+  let html = "";
+
+  html += '<dl class="score">' +
+    '<div><dt>Before</dt><dd>' + fmtBytes(res.before) + '<small>' + res.pages + ' pages · ' + res.rows.length + ' images</small></dd></div>' +
+    '<div><dt>After</dt><dd>' + fmtBytes(res.after) + '<small>' + cuts + ' images resampled</small></dd></div>' +
+    '<div class="win"><dt>Saved</dt><dd>' + (saved > 0 ? pct(saved, res.before) + "%" : "0%") +
+      '<small>' + fmtBytes(saved) + '</small></dd></div>' +
+    '</dl>';
+
+  if(saved > 0){
+    html += '<div class="bar"><i class="b-img" style="width:' + imgPart.toFixed(1) + '%"></i><i class="b-str" style="width:' + strPart.toFixed(1) + '%"></i></div>' +
+      '<div class="barkey">' +
+      '<span><i class="swatch sw-img"></i>images <b>' + fmtBytes(res.imageSaved) + '</b></span>' +
+      '<span><i class="swatch sw-str"></i>structure and metadata <b>' + fmtBytes(structural) + '</b></span>' +
+      '</div>';
+  } else {
+    html += '<div class="barkey"><span>Nothing worth removing at this ceiling. The file is already close to optimal — try a lower resolution ceiling, or accept that it is mostly text.</span></div>';
+  }
+
+  const sorted = res.rows.slice().sort((a, b) => (b.before - b.after) - (a.before - a.after) || b.before - a.before);
+  html += '<div class="scroller"><table class="ledger"><thead><tr>' +
+    '<th>Object</th><th>Pixels</th><th>Codec</th><th>Effective DPI</th>' +
+    '<th class="num">Before</th><th class="num">After</th><th class="num">Saved</th><th>Verdict</th>' +
+    '</tr></thead><tbody>';
+
+  sorted.forEach((r, i) => {
+    const gain = r.before - r.after;
+    const tagClass = r.verdict === "cut" ? "t-cut" : r.verdict === "skip" ? "t-skip" : "t-keep";
+    const fill = Math.max(2, Math.min(100, r.dpi / 600 * 100));
+    const tickPos = Math.min(100, Number($("dpi").value) / 600 * 100);
+    const over = r.dpi > Number($("dpi").value) * 1.08;
+    html += '<tr class="' + (r.preview ? "clickable" : "") + '" data-i="' + i + '">' +
+      "<td>" + esc(r.name) + (r.placed ? "" : " <span title=\"placement not found; page size assumed\">*</span>") + "</td>" +
+      "<td>" + r.w + "×" + r.h + (r.verdict === "cut" ? ' <span class="gain">→ ' + r.newW + "×" + r.newH + "</span>" : "") + "</td>" +
+      "<td>" + esc(r.codec.replace("Decode", "")) + "</td>" +
+      '<td><span class="dpi"><span class="dpi-track"><i class="dpi-fill' + (over ? " over" : "") + '" style="width:' + fill.toFixed(0) + '%"></i>' +
+        '<span class="dpi-tick" style="left:' + tickPos.toFixed(0) + '%"></span></span>' + Math.round(r.dpi) + "</span></td>" +
+      '<td class="num">' + fmtBytes(r.before) + "</td>" +
+      '<td class="num">' + (r.verdict === "cut" ? fmtBytes(r.after) : "—") + "</td>" +
+      '<td class="num ' + (gain > 0 ? "gain" : "") + '">' + (gain > 0 ? fmtBytes(gain) : "—") + "</td>" +
+      '<td><span class="tag ' + tagClass + '">' + esc(r.label) + "</span></td>" +
+      "</tr>";
+  });
+  html += "</tbody></table></div>";
+
+  const firstPreview = sorted.find(r => r.preview);
+  html += '<div class="proof" id="proof">' + (firstPreview ? proofHTML(firstPreview) :
+    '<div class="proof-hd"><h3>Quality check</h3><p>No resampled image to compare at this setting.</p></div>') + "</div>";
+
+  $("results").innerHTML = html;
+
+  $("results").querySelectorAll("tr.clickable").forEach(tr => {
+    tr.addEventListener("click", () => {
+      $("results").querySelectorAll("tr").forEach(x => x.classList.remove("sel"));
+      tr.classList.add("sel");
+      $("proof").innerHTML = proofHTML(sorted[Number(tr.dataset.i)]);
+    });
+  });
+  const firstRow = $("results").querySelector("tr.clickable");
+  if(firstRow) firstRow.classList.add("sel");
+}
+
+function proofHTML(r){
+  const p = r.preview;
+  return '<div class="proof-hd"><h3>Quality check · object ' + esc(r.name) + '</h3>' +
+    "<p>Centre crop, " + p.size + "×" + p.size + " original pixels, both shown at the same size. " +
+    "This is the worst case you will see when someone zooms in.</p></div>" +
+    '<div class="pair">' +
+    '<figure><figcaption><span>Original</span><span>' + fmtBytes(r.before) + " · " + Math.round(r.dpi) + ' DPI</span></figcaption>' +
+    '<img src="' + p.a + '" alt="Original image detail"></figure>' +
+    '<figure><figcaption><span>Compressed</span><span>' + fmtBytes(r.after) + " · " + Math.round(r.dpi * (r.newW / r.w)) + ' DPI</span></figcaption>' +
+    '<img src="' + p.b + '" alt="Compressed image detail"></figure>' +
+    "</div>";
+}
+
+/* graceful failure if the CDN is unreachable */
+window.addEventListener("load", () => {
+  if(!window.PDFLib){
+    showError("The PDF library did not load", "This page pulls pdf-lib from a CDN. Check your connection, or download pdf-lib and point the script tag at a local copy.");
+    $("empty").hidden = true;
+  }
+});
+
+})();
+</script>
+</body>
+</html>

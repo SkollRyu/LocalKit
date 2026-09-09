@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UK Personal Tax Efficiency Calculator — 2026/27 (England &amp; NI)</title>
+<style>
+  :root{
+    --bg:#e9edf0;
+    --card:#ffffff;
+    --border:#cfd6dc;
+    --border-soft:#e5eaee;
+    --text:#14212E;
+    --text-muted:#65717d;
+    --text-faint:#8b96a1;
+    --green:#117a55;
+    --green-bg:#edf8f3;
+    --green-border:#b9dfcf;
+    --amber-1:#d59a25;
+    --amber-1-bg:#fff8ea;
+    --amber-2:#bd7a14;
+    --amber-2-bg:#fff3df;
+    --amber-3:#9d5510;
+    --amber-3-bg:#fcebd6;
+    --locked:#697481;
+    --locked-bg:#eef1f4;
+    --accent:#14212E;
+    --danger:#a63c3c;
+    --danger-bg:#fff0f0;
+    --radius:10px;
+    --focus:#117a55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  html{scroll-behavior:auto;}
+  body{background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;line-height:1.5;padding:24px;}
+  .wrap{max-width:1320px;margin:0 auto;}
+  h1,h2,h3,h4{font-family:inherit;font-weight:700;margin:0 0 4px;color:var(--text);}
+  h1{font-size:24px;letter-spacing:-.025em;}
+  h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;}
+  h3{font-size:15px;letter-spacing:-.01em;}
+  p{margin:0 0 8px;}
+  .muted{color:var(--text-muted);}
+  .faint{color:var(--text-faint);font-size:12px;}
+  small{font-size:12px;}
+
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#f5f7f8;color:var(--text-muted);padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;}
+  .top-meta{font-size:12px;color:var(--text-muted);max-width:580px;text-align:right;line-height:1.55;}
+  .top-meta a{color:var(--text);text-decoration:underline;text-underline-offset:2px;}
+
+  .main-layout{display:grid;grid-template-columns:minmax(400px,.92fr) minmax(0,1.08fr);gap:18px;align-items:start;}
+  .input-column,.output-column{min-width:0;}
+  .column-header{display:flex;align-items:center;gap:9px;margin:0 0 9px;}
+  .column-header h2{margin:0;font-size:12px;}
+  .column-kicker{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--text);background:#fff;border:1px dashed var(--border);padding:3px 7px;border-radius:999px;}
+  @media (min-width:981px){.output-column{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;padding-right:2px;scrollbar-width:thin;}}
+
+  .grid{display:grid;gap:12px;}
+  .grid-2{grid-template-columns:1fr 1fr;}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-5{grid-template-columns:repeat(5,1fr);}
+  .grid-6{grid-template-columns:repeat(2,1fr);}
+  @media (max-width:1180px){.output-column .grid-4{grid-template-columns:repeat(2,1fr)}.output-column .grid-5{grid-template-columns:repeat(2,1fr)}.output-column .grid-3{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:980px){.main-layout{grid-template-columns:1fr}.output-column{position:static;max-height:none;overflow:visible}.grid-2,.grid-3,.grid-4,.grid-5,.grid-6{grid-template-columns:1fr 1fr}}
+  @media (max-width:640px){body{padding:14px}.grid-2,.grid-3,.grid-4,.grid-5,.grid-6{grid-template-columns:1fr}.main-layout{gap:10px}.top-meta{text-align:left}.output-column .grid-4,.output-column .grid-5,.output-column .grid-3{grid-template-columns:1fr}}
+
+  .section{margin-bottom:14px;}
+  .section-title-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;flex-wrap:wrap;gap:8px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:15px;box-shadow:none;}
+  .card.tight{padding:12px 14px;}
+  .output-column .section:first-of-type .card{border-color:#bfcbd3;}
+
+  label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:5px;}
+  input[type=number],input[type=text],select{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:7px;font-size:13.5px;font-family:inherit;background:#fff;color:var(--text);font-variant-numeric:tabular-nums;transition:border-color .12s ease,width .12s ease;}
+  input:focus,select:focus{outline:2px solid var(--focus);outline-offset:1px;border-color:var(--focus);}
+
+  /* Spinner arrows hidden until the field is hovered or focused (typed into) */
+  input[type=number]{-moz-appearance:textfield;}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;opacity:0;margin:0;}
+  input[type=number]:hover::-webkit-outer-spin-button,
+  input[type=number]:hover::-webkit-inner-spin-button,
+  input[type=number]:focus::-webkit-outer-spin-button,
+  input[type=number]:focus::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;}
+  input[type=number]:hover,input[type=number]:focus{-moz-appearance:number-input;}
+  .field{margin-bottom:10px;}
+  .field .hint{font-size:11px;color:var(--text-faint);margin-top:4px;line-height:1.4;}
+  .inline-radio{display:flex;gap:7px;flex-wrap:wrap;margin-top:1px;}
+  .inline-radio label{display:flex;align-items:center;gap:5px;font-weight:600;font-size:12px;color:var(--text);background:#f4f6f7;padding:6px 9px;border-radius:999px;cursor:pointer;border:1px solid var(--border);}
+  .inline-radio label.active{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+  .inline-radio input{width:auto;margin:0;}
+
+  button{font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--text);padding:7px 11px;}
+  button:hover{background:#f4f6f7;}
+  button.primary{background:var(--green);border-color:var(--green);color:#fff;}
+  button.primary:hover{background:#0e6949;}
+  button.ghost{border:1px dashed var(--border);background:#fff;}
+  button.small{padding:4px 8px;font-size:11px;}
+  button.remove{color:var(--danger);border-color:#e5bcbc;background:#fff7f7;}
+  .goal-btns button{background:#fff;}
+  .goal-btns button.active{background:var(--green);color:#fff;border-color:var(--green);}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border-soft);}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:800;}
+  tr:last-child td{border-bottom:none;}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  tfoot td{font-weight:800;border-top:1px solid var(--border);}
+  .holdings-grid{display:flex;flex-direction:column;gap:10px;}
+  .holding-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 46px 13px 14px;position:relative;}
+  .holding-card-top{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  .holding-card-top .field{margin-bottom:0;flex:1 1 120px;min-width:120px;}
+  .holding-card-top .field.type-field{flex:1.6 1 170px;min-width:170px;}
+  .holding-remove{position:absolute;top:10px;right:10px;width:24px;height:24px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:7px;color:var(--text-muted);border:1px solid var(--border);background:#fff;font-size:15px;line-height:1;flex-shrink:0;}
+  .holding-remove:hover{background:#f4f6f7;color:var(--text);}
+  .holding-card-footer{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:11px;padding-top:10px;border-top:1px dashed var(--border-soft);}
+  .holding-card-footer .tag{flex-shrink:0;}
+  .holding-mini-stats{display:flex;gap:18px;flex-wrap:wrap;flex:1;min-width:0;}
+  .holding-mini-stat{display:flex;flex-direction:column;gap:1px;}
+  .holding-mini-stat .l{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);font-weight:800;white-space:nowrap;}
+  .holding-mini-stat .v{font-size:13.5px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .holding-mini-stat .v.tax{color:var(--amber-2);}
+  .holding-mini-stat .v.net{color:var(--green);}
+  .holding-mini-stat .v.warn{color:var(--danger);font-size:11.5px;white-space:normal;}
+  @media (max-width:520px){.holding-card{padding-right:14px;}.holding-remove{position:static;margin-left:auto;}.holding-card-top{align-items:stretch;}}
+
+  .tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;}
+  .tag.free{background:var(--green-bg);color:var(--green);}
+  .tag.taxed{background:var(--amber-2-bg);color:var(--amber-2);}
+  .tag.locked{background:var(--locked-bg);color:var(--locked);}
+
+  .stat{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .stat .label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:800;}
+  .stat .value{font-size:23px;font-weight:800;letter-spacing:-.025em;color:var(--text);font-variant-numeric:tabular-nums;}
+  .stat .value.small{font-size:16px;}
+  .stat .sub{font-size:11px;color:var(--text-muted);line-height:1.4;}
+  .output-column .stat .value{font-size:20px;}.output-column .stat .value.small{font-size:15px;}
+
+  .meter{height:4px;border-radius:999px;background:var(--border-soft);overflow:hidden;display:flex;margin:7px 0 0;}
+  .meter>div{height:100%;transition:width .12s ease;}
+  .meter.free>div{background:var(--green);}.meter.taper>div{background:var(--amber-2);}
+
+  .allowance-card-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:12px;}
+  .allowance-bars{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;}
+  .allowance-row{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .allowance-row-label{font-size:11px;font-weight:800;color:var(--text-muted);}
+  .allowance-row-value{font-size:14px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;margin-top:2px;}
+  .allowance-row-sub{font-size:11px;color:var(--text-muted);line-height:1.35;margin-top:3px;}
+  .allowance-row-sub.warn{color:var(--danger);font-weight:700;}
+  .allowance-row .meter{height:6px;margin-top:5px;}
+  .meter.over>div{background:var(--danger)!important;}
+  .meter.bar-pa>div{background:#3b6e9c;}
+  .meter.bar-isa>div{background:var(--green);}
+  .meter.bar-pension>div{background:#7a5ab3;}
+  .meter.bar-psa>div{background:var(--amber-2);}
+  .meter.bar-srs>div{background:#1f9d8a;}
+  .meter.bar-div>div{background:#b0559c;}
+  .meter.bar-cgt>div{background:#4f6fd6;}
+  @media (max-width:640px){.allowance-bars{grid-template-columns:1fr;}}
+
+  .split-bar{display:flex;height:28px;border-radius:6px;overflow:hidden;border:1px solid var(--border);}
+  .split-bar>div{display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;}
+  .split-accessible{background:var(--green);}.split-locked{background:var(--locked);}
+
+  .kv{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:7px 0;border-bottom:1px dashed var(--border-soft);font-size:12px;}
+  .kv:last-child{border-bottom:none;}.kv b{color:var(--text);font-variant-numeric:tabular-nums;}
+
+  .stack-wrap{position:relative;padding-top:22px;}
+  .stack-axis{position:relative;height:18px;margin-bottom:4px;font-size:10px;color:var(--text-faint);}
+  .stack-axis span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;}
+  .stack-axis:after{content:"";position:absolute;left:0;right:0;bottom:-1px;border-bottom:1px solid var(--border);}
+  .stack-row{position:relative;height:28px;background:#f2f4f5;border-radius:6px;margin-bottom:7px;overflow:hidden;border:1px solid var(--border-soft);}
+  .stack-row .seg{position:absolute;top:0;bottom:0;}
+  .stack-row .rowlabel{position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:800;color:var(--text);z-index:3;text-shadow:0 0 4px rgba(255,255,255,.95);}
+  .seg.free{background:var(--green);}.seg.b1{background:var(--amber-1);}.seg.b2{background:var(--amber-2);}.seg.b3{background:var(--amber-3);}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--text-muted);margin-top:7px;}.legend span{display:inline-flex;align-items:center;gap:5px;}.swatch{width:9px;height:9px;border-radius:2px;display:inline-block;}
+  .threshold-line{position:absolute;top:39px;bottom:30px;width:0;border-left:1px dashed #b8c1c8;pointer-events:none;z-index:2;}
+  .rate-curve{margin-top:12px;padding-top:10px;border-top:1px solid var(--border-soft);}
+  .rate-curve svg{display:block;width:100%;height:74px;}
+  .rate-curve text{font-family:inherit;fill:var(--text-faint);font-size:9px;}
+  .rate-curve .curve{fill:none;stroke:var(--text);stroke-width:2;stroke-linejoin:round;}
+  .rate-curve .tick{stroke:#c1c9cf;stroke-width:1;stroke-dasharray:2 2;}
+
+  .obs-list{display:flex;flex-direction:column;gap:0;}
+  .obs{display:block;padding:11px 12px 11px 14px;border:0;border-top:1px solid var(--border-soft);border-left:3px solid var(--border);background:#fff;font-size:12px;}
+  .obs:first-child{border-top:none;}
+  .obs .ico{display:none;}.obs.free{border-left-color:var(--green);background:#fff;}.obs.warn{border-left-color:var(--amber-1);background:#fff;}.obs.hot{border-left-color:var(--amber-3);background:#fff;}
+  .obs b{display:block;color:var(--text);font-size:12px;margin-bottom:2px;}
+
+  .section-title-row .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:860px){.two-col{grid-template-columns:1fr;}}
+  .goal-btns{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}.goal-btns button{flex:1;min-width:145px;}
+
+  .rank{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--text);color:#fff;font-size:10px;font-weight:800;margin-right:5px;}
+  .warn-text{color:var(--danger);}.ok-text{color:var(--green);}
+
+  footer{margin-top:24px;padding-top:13px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-faint);}
+  details{font-size:12px;color:var(--text-muted);} details summary{cursor:pointer;font-weight:800;color:var(--text);margin-bottom:8px;} .ref-table td,.ref-table th{padding:4px 8px;font-size:11px;}
+  ul{margin-top:6px;padding-left:18px;}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>UK Personal Tax Efficiency Calculator</h1>
+      <div class="badge">England &amp; Northern Ireland · Tax year 2026/27 (6 Apr 2026 – 5 Apr 2027)</div>
+    </div>
+    <div class="top-meta">
+      Rates checked against current HMRC/NS&amp;I guidance as of September 2026. This is a planning aid, not advice —
+      see <a href="#assumptions">assumptions &amp; sources</a> at the bottom. Nothing here is stored: all figures live only in this browser tab.
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <div class="input-column">
+      <div class="column-header"><span class="column-kicker">Input</span><h2>Your inputs</h2></div>
+  <!-- ============= INPUTS ============= -->
+  <div class="section">
+    <h2>Your details</h2>
+    <div class="card">
+      <div class="grid grid-3">
+        <div class="field">
+          <label for="salary">Gross salary (£/yr)</label>
+          <input type="number" id="salary" value="65000" min="0" step="500">
+        </div>
+        <div class="field">
+          <label for="taxCode">Tax code</label>
+          <input type="text" id="taxCode" value="1257L">
+          <div class="hint" id="taxCodeHint"></div>
+        </div>
+        <div class="field">
+          <label for="children">Children on Child Benefit</label>
+          <input type="number" id="children" value="2" min="0" max="10" step="1">
+        </div>
+        <div class="field">
+          <label for="isaUsed">ISA subscribed this year (£)</label>
+          <input type="number" id="isaUsed" value="5000" min="0" max="20000" step="250">
+        </div>
+        <div class="field">
+          <label for="gainsRealised">Capital gains realised this year (£)</label>
+          <input type="number" id="gainsRealised" value="0" min="0" step="100">
+        </div>
+      </div>
+      <div class="grid grid-2" style="margin-top:2px;">
+        <div class="field">
+          <label for="pensionPct">Pension contribution — employee %</label>
+          <input type="number" id="pensionPct" value="5" min="0" max="100" step="0.5">
+          <div class="hint" id="pensionPctMonthly"></div>
+        </div>
+        <div class="field">
+          <label for="employerPct">Employer pension %</label>
+          <input type="number" id="employerPct" value="4" min="0" step="0.5">
+          <div class="hint" id="employerPctMonthly"></div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Contribution method</label>
+        <div class="inline-radio" id="methodRadios">
+          <label><input type="radio" name="method" value="salsac" checked> Salary sacrifice</label>
+          <label><input type="radio" name="method" value="ras"> Relief at source</label>
+          <label><input type="radio" name="method" value="netpay"> Net pay arrangement</label>
+        </div>
+        <div class="hint" id="methodHint"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= HOLDINGS ============= -->
+  <div class="section">
+    <div class="section-title-row">
+      <h2 style="margin-bottom:0;">Holdings</h2>
+      <div class="toolbar">
+        <button class="ghost small" id="addHolding">+ Add holding</button>
+      </div>
+    </div>
+    <div class="holdings-grid" id="holdingsGrid"></div>
+    <div class="faint" style="margin-top:8px;">Each card shows the input fields relevant to that holding type, plus its estimated income, tax and growth for the year.</div>
+  </div>
+
+    </div>
+
+    <div class="output-column">
+      <div class="column-header"><span class="column-kicker">Output</span><h2>Calculation results</h2></div>
+  <!-- ============= HEADLINE DASHBOARD ============= -->
+  <div class="section">
+    <h2>Where you stand</h2>
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="stat">
+          <div class="label">Marginal band</div>
+          <div class="value small" id="marginalBand">—</div>
+          <div class="sub" id="marginalBandSub"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat">
+          <div class="label">Effective marginal rate</div>
+          <div class="value" id="marginalRate">—</div>
+          <div class="sub" id="marginalRateSub"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat">
+          <div class="label">Take-home (monthly)</div>
+          <div class="value" id="takeHomeMonthly">—</div>
+          <div class="sub" id="takeHomeSub"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card allowance-card" style="margin-top:14px;">
+      <div class="allowance-card-title">Allowances &amp; annual caps — how much you've used</div>
+      <div class="allowance-bars">
+        <div class="allowance-row">
+          <span class="allowance-row-label">Personal Allowance</span>
+          <span class="allowance-row-value" id="paValue">—</span>
+          <div class="meter bar-pa"><div id="paMeter" style="width:0%"></div></div>
+          <div class="allowance-row-sub" id="paSub"></div>
+        </div>
+        <div class="allowance-row">
+          <span class="allowance-row-label">ISA allowance</span>
+          <span class="allowance-row-value" id="isaHeadroom">—</span>
+          <div class="meter bar-isa"><div id="isaMeter" style="width:0%"></div></div>
+          <div class="allowance-row-sub" id="isaHeadroomSub"></div>
+        </div>
+        <div class="allowance-row">
+          <span class="allowance-row-label">Pension annual allowance</span>
+          <span class="allowance-row-value" id="pensionHeadroom">—</span>
+          <div class="meter bar-pension"><div id="pensionMeter" style="width:0%"></div></div>
+          <div class="allowance-row-sub" id="pensionHeadroomSub"></div>
+        </div>
+        <div class="allowance-row">
+          <span class="allowance-row-label">Personal Savings Allowance</span>
+          <span class="allowance-row-value" id="psaValue">—</span>
+          <div class="meter bar-psa"><div id="psaMeter" style="width:0%"></div></div>
+          <div class="allowance-row-sub" id="psaSub"></div>
+        </div>
+        <div class="allowance-row">
+          <span class="allowance-row-label">Starting rate for savings</span>
+          <span class="allowance-row-value" id="srsValue">—</span>
+          <div class="meter bar-srs"><div id="srsMeter" style="width:0%"></div></div>
+          <div class="allowance-row-sub" id="srsSub"></div>
+        </div>
+        <div class="allowance-row">
+          <span class="allowance-row-label">Dividend allowance</span>
+          <span class="allowance-row-value" id="divValue">—</span>
+          <div class="meter bar-div"><div id="divMeter" style="width:0%"></div></div>
+          <div class="allowance-row-sub" id="divSub"></div>
+        </div>
+        <div class="allowance-row">
+          <span class="allowance-row-label">CGT annual exempt amount</span>
+          <span class="allowance-row-value" id="cgtValue">—</span>
+          <div class="meter bar-cgt"><div id="cgtMeter" style="width:0%"></div></div>
+          <div class="allowance-row-sub" id="cgtSub"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="grid grid-2" style="margin-top:14px;">
+      <div class="card tight">
+        <div class="stat"><div class="label">National Insurance (employee)</div><div class="value small" id="niValue">—</div><div class="sub" id="niSub"></div></div>
+      </div>
+      <div class="card tight">
+        <div class="stat"><div class="label">Child Benefit (net of HICBC)</div><div class="value small" id="cbValue">—</div><div class="sub" id="cbSub"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= TAKE HOME COMPARISON ============= -->
+  <div class="section">
+    <h2>Monthly take-home: with vs without pension contribution</h2>
+    <div class="card">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">Take-home — with pension</div><div class="value" id="thWith">—</div></div>
+        <div class="stat"><div class="label">Take-home — without pension</div><div class="value" id="thWithout">—</div></div>
+        <div class="stat"><div class="label">Monthly cost of contributing</div><div class="value" id="thCost">—</div></div>
+        <div class="stat"><div class="label">Annual pension pot added</div><div class="value" id="thPot">—</div></div>
+      </div>
+      <p class="faint" style="margin-top:10px;" id="thExplain"></p>
+    </div>
+  </div>
+
+  <!-- ============= MONEY SPLIT ============= -->
+  <div class="section">
+    <h2>Total money — accessible vs locked</h2>
+    <div class="card">
+      <div class="split-bar" id="splitBar"></div>
+      <div class="grid grid-3" style="margin-top:12px;">
+        <div class="stat"><div class="label">Accessible (ISA / GIA / savings / gilts / premium bonds)</div><div class="value small" id="splitAccessible">—</div></div>
+        <div class="stat"><div class="label">Locked (pension, until minimum pension age)</div><div class="value small" id="splitLocked">—</div></div>
+        <div class="stat"><div class="label">Total across holdings</div><div class="value small" id="splitTotal">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= PER HOLDING TABLE ============= -->
+  <div class="section">
+    <h2>Per-holding return: gross / tax / net</h2>
+    <div class="card" style="overflow-x:auto;">
+      <table id="perHoldingTable">
+        <thead>
+          <tr>
+            <th>Holding</th><th>Wrapper</th>
+            <th class="num">Amount</th>
+            <th class="num">Gross income</th>
+            <th class="num">Gross growth</th>
+            <th class="num">Tax</th>
+            <th class="num">Net return</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="perHoldingBody"></tbody>
+        <tfoot><tr id="perHoldingTotals"></tr></tfoot>
+      </table>
+      <p class="faint" style="margin-top:8px;">Tax on interest/dividends is attributed using your pooled average rate for that income type (bands apply progressively to the total, not per-account). Unrealised GIA growth is not taxed until sold — see CGT harvesting below.</p>
+    </div>
+  </div>
+
+  <!-- ============= INCOME STACKING ============= -->
+  <div class="section">
+    <h2>Income stacking through the bands</h2>
+    <div class="card">
+      <div class="stack-wrap">
+        <div class="stack-axis" id="stackAxis"></div>
+        <div class="stack-row" id="rowSalary"><span class="rowlabel">Salary</span></div>
+        <div class="stack-row" id="rowInterest"><span class="rowlabel">Interest</span></div>
+        <div class="stack-row" id="rowDividends"><span class="rowlabel">Dividends</span></div>
+      </div>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--green)"></span>Tax-free (allowance / PSA / starting rate / dividend allowance)</span>
+        <span><span class="swatch" style="background:var(--amber-1)"></span>Basic-rate band</span>
+        <span><span class="swatch" style="background:var(--amber-2)"></span>Higher-rate band</span>
+        <span><span class="swatch" style="background:var(--amber-3)"></span>Additional-rate band</span>
+      </div>
+      <div class="rate-curve" aria-label="Indicative marginal rate step curve">
+        <svg viewBox="0 0 520 74" role="img">
+          <line class="tick" x1="104" y1="8" x2="104" y2="62"></line>
+          <line class="tick" x1="312" y1="8" x2="312" y2="62"></line>
+          <line class="tick" x1="434" y1="8" x2="434" y2="62"></line>
+          <path class="curve" d="M4 58 H104 V45 H312 V27 H434 V10 H516"></path>
+          <text x="4" y="72">0%</text>
+          <text x="92" y="72">20%</text>
+          <text x="300" y="72">40%</text>
+          <text x="422" y="72">45%</text>
+          <text x="466" y="72">marginal rate</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= OBSERVATIONS ============= -->
+  <div class="section">
+    <h2>Rule-based observations</h2>
+    <div class="card">
+      <div class="obs-list" id="observations"></div>
+    </div>
+  </div>
+
+    </div>
+  </div>
+
+  <!-- ============= TOOLS ============= -->
+  <div class="section tools-section">
+    <h2>Tools</h2>
+    <div class="two-col">
+
+      <div class="card">
+        <h3>1. Pension contribution optimiser</h3>
+        <p class="faint">Pick a goal. The tool computes the extra gross pension contribution needed, its true cost from your take-home pay, and the effective relief rate once tax, NI and Child Benefit are all accounted for.</p>
+        <div class="goal-btns" id="goalBtns">
+          <button data-goal="pa100k">Stay under £100k (keep full PA)</button>
+          <button data-goal="hr50270">Stay under £50,270 (avoid higher rate)</button>
+          <button data-goal="cb60k">Stay under £60k (keep full Child Benefit)</button>
+          <button data-goal="custom">Custom target</button>
+        </div>
+        <div class="field" id="customTargetWrap" style="display:none;">
+          <label for="customTarget">Target adjusted net income (£)</label>
+          <input type="number" id="customTarget" value="100000" step="500">
+        </div>
+        <div id="optimiserOut"></div>
+      </div>
+
+      <div class="card">
+        <h3>2. Wrapper allocation solver</h3>
+        <p class="faint">Rules-based order for placing new money: ISA headroom first, then pension for higher-rate/taper/Child-Benefit relief, then GIA. Assumes money isn't needed before retirement for anything routed to pension.</p>
+        <div class="field">
+          <label for="newMoney">New money to invest this year (£)</label>
+          <input type="number" id="newMoney" value="15000" min="0" step="500">
+        </div>
+        <div id="solverOut"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer id="assumptions">
+    <details open>
+      <summary>Assumptions &amp; simplifications</summary>
+      <p>This tool models England &amp; Northern Ireland income tax only (not Scotland). It is a planning illustration, not tax advice, and it does not connect to HMRC or store any data.</p>
+      <ul>
+        <li><b>Tax code:</b> standard <code>NNNNL</code> codes set the Personal Allowance base; <code>K</code> codes add the equivalent to taxable income; other codes (BR, D0, 0T, NT…) fall back to the standard £12,570 allowance with taper applied, shown as a note.</li>
+        <li><b>Pension contribution methods</b> are modelled so that, once all reliefs are claimed, total annual tax liability is the same for net pay and relief-at-source — the difference shown is cash-flow (how much leaves your pay this month) and, for salary sacrifice, employee &amp; employer National Insurance savings. Employer contributions are assumed to be calculated on your original contractual salary, not the post-sacrifice salary.</li>
+        <li><b>GIA / Stocks &amp; Shares ISA growth</b> is treated as unrealised — no Capital Gains Tax is charged until you tell the tool a gain has been realised (the "capital gains realised this year" field), matching how CGT actually works.</li>
+        <li><b>Per-holding tax</b> for interest and dividends is attributed using your pooled average rate for that income type, since UK tax bands apply progressively to your total income, not per account.</li>
+        <li><b>Gilts</b>: coupon income is taxed as savings interest; capital gains on individual UK gilts are exempt from CGT, so gilt "growth" (if any) is always shown tax-free.</li>
+        <li><b>Pension withdrawals</b> are not modelled — growth is shown tax-free while invested and locked until minimum pension age, ignoring the eventual 25% tax-free lump sum / marginal-rate tax on the rest.</li>
+        <li>Not modelled: Scotland, Gift Aid, Marriage Allowance, Blind Person's Allowance, MPAA triggering, defined-benefit accrual, student loans, multiple employments, self-employment (Class 2/4 NI).</li>
+      </ul>
+    </details>
+    <details>
+      <summary>2026/27 rates used (verified September 2026)</summary>
+      <table class="ref-table">
+        <tr><td>Personal Allowance</td><td>£12,570; tapered £1 per £2 of adjusted net income above £100,000, £0 at £125,140</td></tr>
+        <tr><td>Income tax bands (England/NI)</td><td>20% to £50,270 · 40% to £125,140 · 45% above</td></tr>
+        <tr><td>National Insurance (employee, Class 1)</td><td>8% between £12,570–£50,270, 2% above</td></tr>
+        <tr><td>National Insurance (employer, Class 1)</td><td>15% above £5,000 secondary threshold, no upper limit</td></tr>
+        <tr><td>Dividend allowance</td><td>£500; rates 10.75% (basic) / 35.75% (higher) / 39.35% (additional)</td></tr>
+        <tr><td>Personal Savings Allowance</td><td>£1,000 (basic) / £500 (higher) / £0 (additional)</td></tr>
+        <tr><td>Starting rate for savings</td><td>£5,000 at 0%, reduced £1 for £1 by non-savings income above the Personal Allowance (gone above £17,570)</td></tr>
+        <tr><td>CGT annual exempt amount</td><td>£3,000; rates 18% (within basic-rate band) / 24% (above)</td></tr>
+        <tr><td>ISA allowance</td><td>£20,000</td></tr>
+        <tr><td>Pension annual allowance</td><td>£60,000; tapered £1 per £2 of adjusted income above £260,000 (only if threshold income &gt;£200,000), floor £10,000 at £360,000; MPAA £10,000</td></tr>
+        <tr><td>Child Benefit</td><td>£27.05/wk eldest (£1,406.60/yr) + £17.90/wk each further child (£930.80/yr)</td></tr>
+        <tr><td>High Income Child Benefit Charge</td><td>1% of Child Benefit clawed back per £200 of adjusted net income between £60,000–£80,000; 100% clawed back at £80,000+</td></tr>
+        <tr><td>Premium Bonds prize fund rate</td><td>4.35% (September 2026 draw), tax-free, editable, per-person cap £50,000</td></tr>
+      </table>
+    </details>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   CONSTANTS — 2026/27 England & Northern Ireland
+   ============================================================ */
+const R = {
+  PA_STANDARD: 12570,
+  PA_TAPER_START: 100000,
+  PA_TAPER_END: 125140,
+  BASIC_BAND_WIDTH: 37700,
+  HIGHER_THRESHOLD: 50270,
+  ADDITIONAL_THRESHOLD: 125140,
+
+  NI_PT: 12570,
+  NI_UEL: 50270,
+  NI_MAIN: 0.08,
+  NI_UPPER: 0.02,
+  NI_ST: 5000,
+  NI_EMPLOYER_RATE: 0.15,
+
+  DIV_ALLOWANCE: 500,
+  DIV_BASIC: 0.1075,
+  DIV_HIGHER: 0.3575,
+  DIV_ADDITIONAL: 0.3935,
+
+  PSA_BASIC: 1000,
+  PSA_HIGHER: 500,
+  PSA_ADDITIONAL: 0,
+  STARTING_RATE_BAND: 5000,
+
+  CGT_AEA: 3000,
+  CGT_BASIC: 0.18,
+  CGT_HIGHER: 0.24,
+
+  ISA_ALLOWANCE: 20000,
+
+  PENSION_AA: 60000,
+  PENSION_AA_TAPER_START: 260000,
+  PENSION_AA_THRESHOLD_INCOME: 200000,
+  PENSION_AA_MIN: 10000,
+
+  CB_ELDEST: 1406.60,
+  CB_ADDITIONAL: 930.80,
+  HICBC_LOWER: 60000,
+  HICBC_UPPER: 80000,
+
+  PB_MAX: 50000
+};
+
+const HOLDING_TYPES = {
+  taxable_savings: { label:'Taxable Savings', rate1Label:'Interest rate (%)', hasRate2:false, category:'interest', wrapper:'Taxable', accessible:true },
+  cash_isa:         { label:'Cash ISA', rate1Label:'Interest rate (%)', hasRate2:false, category:'taxfree', wrapper:'ISA', accessible:true },
+  ss_isa:           { label:'Stocks & Shares ISA', rate1Label:'Dividend yield (%)', rate2Label:'Expected growth (%)', hasRate2:true, category:'taxfree', wrapper:'ISA', accessible:true },
+  gia:              { label:'GIA (General Investment)', rate1Label:'Dividend yield (%)', rate2Label:'Expected growth (%)', hasRate2:true, category:'dividend', wrapper:'Taxable', accessible:true },
+  gilts:            { label:'Gilts', rate1Label:'Coupon rate (%)', hasRate2:false, category:'interest', wrapper:'Taxable', accessible:true, cgtExempt:true },
+  premium_bonds:    { label:'Premium Bonds', rate1Label:'Prize fund rate (%)', hasRate2:false, category:'taxfree', wrapper:'Taxable (tax-free)', accessible:true },
+  pension:          { label:'Pension', rate1Label:'Expected growth (%)', hasRate2:false, category:'taxfree', wrapper:'Pension', accessible:false }
+};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function fmt(n){
+  n = Math.round(n||0);
+  const neg = n<0; n = Math.abs(n);
+  return (neg?'-':'') + '£' + n.toLocaleString('en-GB');
+}
+function fmtPct(n,dp){
+  dp = dp===undefined?1:dp;
+  return (n*100).toFixed(dp) + '%';
+}
+function clamp(n,lo,hi){ return Math.max(lo, Math.min(hi, n)); }
+function usedOfTotal(used, total){ return fmt(Math.max(0,used)) + ' of ' + fmt(total) + ' used'; }
+function num(id){ const el=document.getElementById(id); const v=parseFloat(el.value); return isNaN(v)?0:v; }
+
+function overlap(start,end,lo,hi){
+  return Math.max(0, Math.min(end,hi) - Math.max(start,lo));
+}
+
+// Generic progressive band tax across [start, start+amount) using edges [0,PA,PA+37700,125140,Infinity] & 4 rates.
+// IMPORTANT: the basic-rate band is a FIXED WIDTH (£37,700) starting right after the (possibly tapered)
+// Personal Allowance — it is NOT a fixed £50,270 absolute threshold. Only the £125,140 additional-rate
+// threshold is fixed in absolute terms (that's the point at which the PA taper reaches exactly £0).
+// This matters for the £100k–£125,140 taper zone: as PA shrinks, the newly-exposed allowance lands in the
+// 40% band (not 20%), producing the well-known ~60% effective marginal rate. Below £100k, PA=£12,570
+// standard, so PA+37,700 = £50,270 exactly as normal — fully consistent with the standard published bands.
+function taxAcrossBands(start, amount, PA, rates){
+  const paSafe = Math.max(0,PA);
+  const basicUpper = Math.min(paSafe + R.BASIC_BAND_WIDTH, R.ADDITIONAL_THRESHOLD);
+  const edges = [0, paSafe, basicUpper, R.ADDITIONAL_THRESHOLD, Infinity];
+  const end = start + amount;
+  let tax = 0;
+  const breakdown = [];
+  for(let i=0;i<4;i++){
+    const lo = edges[i], hi = edges[i+1];
+    const s = overlap(start,end,lo,hi);
+    tax += s*rates[i];
+    breakdown.push({amount:s, rate:rates[i], tax:s*rates[i]});
+  }
+  return {tax, breakdown};
+}
+
+function parseTaxCode(code){
+  code = (code||'').trim().toUpperCase();
+  let base = R.PA_STANDARD, note = 'Standard code — £12,570 allowance before taper.';
+  let extraTaxableFromK = 0;
+  let m;
+  if((m = code.match(/^(\d{1,4})L$/))){
+    base = parseInt(m[1],10)*10;
+    note = base===R.PA_STANDARD ? 'Standard code — £12,570 allowance before taper.' : ('Non-standard L code — base allowance £'+base.toLocaleString('en-GB')+' before taper.');
+  } else if((m = code.match(/^K(\d{1,4})$/))){
+    extraTaxableFromK = parseInt(m[1],10)*10;
+    base = 0;
+    note = 'K code — adds £'+extraTaxableFromK.toLocaleString('en-GB')+' to taxable income instead of giving an allowance.';
+  } else if(code){
+    note = 'Special code ('+code+') — this calculator falls back to the standard £12,570 allowance with taper for modelling purposes.';
+  }
+  return {base, extraTaxableFromK, note};
+}
+
+function taperedPA(base, ani){
+  if(ani <= R.PA_TAPER_START) return base;
+  const reduction = (ani - R.PA_TAPER_START)/2;
+  return Math.max(0, base - reduction);
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let holdings = [
+  {id:1, type:'taxable_savings', amount:10000, r1:4.5, r2:0},
+  {id:2, type:'cash_isa',        amount:15000, r1:4.2, r2:0},
+  {id:3, type:'ss_isa',          amount:30000, r1:1.8, r2:6.0},
+  {id:4, type:'gia',             amount:20000, r1:2.0, r2:6.0},
+  {id:5, type:'gilts',           amount:5000,  r1:4.0, r2:0},
+  {id:6, type:'premium_bonds',   amount:8000,  r1:4.35, r2:0},
+  {id:7, type:'pension',         amount:60000, r1:6.0, r2:0}
+];
+let nextId = 8;
+
+/* ============================================================
+   CORE MODEL — takes a full input snapshot, returns everything
+   ============================================================ */
+function computeModel(inp){
+  const tc = parseTaxCode(inp.taxCode);
+
+  // ---- Salary & pension mechanics ----
+  const p = clamp(inp.pensionPct,0,100)/100;
+  const e = clamp(inp.employerPct,0,100)/100;
+  const S = Math.max(0, inp.salary);
+
+  let taxableSalary, niableSalary, cashOutPension, employeeGrossContribution, method=inp.pensionMethod, payBase;
+  const employerContribution = S*e;
+
+  if(method==='salsac'){
+    const reduced = S*(1-p);
+    taxableSalary = reduced;
+    niableSalary = reduced;
+    employeeGrossContribution = S*p;
+    cashOutPension = 0; // never left take-home; it was never salary in the first place
+    payBase = reduced; // the actual contractual (post-sacrifice) salary paid
+  } else if(method==='netpay'){
+    employeeGrossContribution = S*p;
+    taxableSalary = S - employeeGrossContribution;
+    niableSalary = S; // NI unaffected
+    cashOutPension = employeeGrossContribution; // deducted pre-tax, post-NI, from pay
+    payBase = S;
+  } else { // ras
+    employeeGrossContribution = S*p;
+    taxableSalary = S - employeeGrossContribution; // economically equivalent once full relief claimed
+    niableSalary = S;
+    // Taxable salary is reduced by the GROSS contribution above, which already delivers the full
+    // relief (basic + higher/additional) through reduced tax. So the full gross must come out of pay
+    // here, otherwise the 20% provider top-up would be counted twice. Annual outcome matches net pay;
+    // only the month-to-month cash flow differs in reality.
+    cashOutPension = employeeGrossContribution;
+    payBase = S;
+  }
+  taxableSalary += tc.extraTaxableFromK;
+  taxableSalary = Math.max(0, taxableSalary);
+
+  // ---- Holdings aggregation ----
+  let interestIncome=0, dividendIncome=0, isaTaxFreeIncome=0, isaGrowth=0, pbIncome=0, pensionGrowth=0, giaGrowth=0, gilteGrowth=0;
+  const perHolding = [];
+  (inp.holdings||[]).forEach(h=>{
+    const meta = HOLDING_TYPES[h.type];
+    const amt = Math.max(0, h.amount||0);
+    const r1 = (h.r1||0)/100, r2=(h.r2||0)/100;
+    let incomeGross=0, growthGross=0;
+    if(h.type==='taxable_savings' || h.type==='gilts'){
+      incomeGross = amt*r1;
+      interestIncome += incomeGross;
+    } else if(h.type==='cash_isa'){
+      incomeGross = amt*r1; isaTaxFreeIncome += incomeGross;
+    } else if(h.type==='ss_isa'){
+      incomeGross = amt*r1; growthGross = amt*r2;
+      isaTaxFreeIncome += incomeGross; isaGrowth += growthGross;
+    } else if(h.type==='gia'){
+      incomeGross = amt*r1; growthGross = amt*r2;
+      dividendIncome += incomeGross; giaGrowth += growthGross;
+    } else if(h.type==='premium_bonds'){
+      incomeGross = amt*r1; pbIncome += incomeGross;
+    } else if(h.type==='pension'){
+      growthGross = amt*r1; pensionGrowth += growthGross;
+    }
+    perHolding.push({...h, meta, amt, incomeGross, growthGross});
+  });
+  const totalHoldingsValue = (inp.holdings||[]).reduce((a,h)=>a+Math.max(0,h.amount||0),0);
+  const lockedValue = (inp.holdings||[]).filter(h=>h.type==='pension').reduce((a,h)=>a+Math.max(0,h.amount||0),0);
+  const accessibleValue = totalHoldingsValue - lockedValue;
+
+  // ---- Adjusted net income (for PA taper, HICBC, pension taper) ----
+  // = taxable salary + interest + dividends - (nothing else modelled)
+  const ani = taxableSalary + interestIncome + dividendIncome;
+
+  const PA = taperedPA(tc.base, ani);
+
+  // ---- Income tax: stack non-savings -> savings -> dividends ----
+  let pos = 0;
+  const nonSavings = taxAcrossBands(pos, taxableSalary, PA, [0,0.20,0.40,0.45]);
+  pos += taxableSalary;
+
+  // starting rate for savings
+  const startingRateAvailable = clamp(R.STARTING_RATE_BAND - Math.max(0, taxableSalary-PA), 0, R.STARTING_RATE_BAND);
+  // marginal band for PSA purposes: look at where top of (salary+interest) lands
+  const topAfterInterest = pos + interestIncome;
+  let psaAmount = R.PSA_BASIC;
+  if(topAfterInterest > R.ADDITIONAL_THRESHOLD) psaAmount = R.PSA_ADDITIONAL;
+  else if(topAfterInterest > R.HIGHER_THRESHOLD) psaAmount = R.PSA_HIGHER;
+
+  const startingRateUsed = Math.min(interestIncome, startingRateAvailable);
+  const afterStarting = interestIncome - startingRateUsed;
+  const psaUsed = Math.min(afterStarting, psaAmount);
+  const taxableInterestRemainder = afterStarting - psaUsed;
+  const interestTaxablePos = pos + startingRateUsed + psaUsed;
+  const savingsTaxCalc = taxAcrossBands(interestTaxablePos, taxableInterestRemainder, PA, [0,0.20,0.40,0.45]);
+  pos += interestIncome;
+
+  // dividends
+  const divAllowanceUsed = Math.min(dividendIncome, R.DIV_ALLOWANCE);
+  const taxableDivRemainder = dividendIncome - divAllowanceUsed;
+  const divTaxablePos = pos + divAllowanceUsed;
+  const divTaxCalc = taxAcrossBands(divTaxablePos, taxableDivRemainder, PA, [0,R.DIV_BASIC,R.DIV_HIGHER,R.DIV_ADDITIONAL]);
+  pos += dividendIncome;
+
+  const incomeTaxTotal = nonSavings.tax + savingsTaxCalc.tax + divTaxCalc.tax;
+
+  // ---- National Insurance ----
+  function niFor(earnings){
+    const basicBand = clamp(earnings, R.NI_PT, R.NI_UEL) - R.NI_PT;
+    const b = Math.max(0,basicBand);
+    const upperBand = Math.max(0, earnings - R.NI_UEL);
+    return b*R.NI_MAIN + upperBand*R.NI_UPPER;
+  }
+  const employeeNI = niFor(niableSalary);
+  const employerNI = Math.max(0, niableSalary - R.NI_ST) * R.NI_EMPLOYER_RATE;
+
+  // ---- Child Benefit / HICBC ----
+  const children = Math.max(0, Math.round(inp.children||0));
+  const totalCB = children>0 ? R.CB_ELDEST + Math.max(0,children-1)*R.CB_ADDITIONAL : 0;
+  const hicbcFraction = clamp((ani - R.HICBC_LOWER)/(R.HICBC_UPPER-R.HICBC_LOWER), 0, 1);
+  const hicbc = totalCB * hicbcFraction;
+  const netCB = totalCB - hicbc;
+
+  // ---- CGT ----
+  const gains = Math.max(0, inp.gainsRealised||0);
+  const taxableGain = Math.max(0, gains - R.CGT_AEA);
+  const cgtStart = pos; // stacks after all income
+  const cgtBasicUpper = Math.min(Math.max(0,PA) + R.BASIC_BAND_WIDTH, R.ADDITIONAL_THRESHOLD);
+  const cgtCalc18 = overlap(cgtStart, cgtStart+taxableGain, 0, cgtBasicUpper)*R.CGT_BASIC;
+  const cgtCalc24 = overlap(cgtStart, cgtStart+taxableGain, cgtBasicUpper, Infinity)*R.CGT_HIGHER;
+  const cgtDue = cgtCalc18 + cgtCalc24;
+
+  // ---- Take-home ----
+  const takeHomeAnnual = payBase - incomeTaxTotal - employeeNI - cashOutPension - hicbc;
+
+  // ---- ISA headroom ----
+  const isaHeadroom = Math.max(0, R.ISA_ALLOWANCE - Math.max(0,inp.isaUsed||0));
+
+  // ---- Pension annual allowance / headroom ----
+  const totalPensionContribution = employeeGrossContribution + employerContribution;
+  const thresholdIncome = taxableSalary + interestIncome + dividendIncome; // excludes employer pension contributions
+  const adjustedIncome = thresholdIncome + totalPensionContribution;
+  let pensionAA = R.PENSION_AA;
+  if(thresholdIncome > R.PENSION_AA_THRESHOLD_INCOME && adjustedIncome > R.PENSION_AA_TAPER_START){
+    pensionAA = Math.max(R.PENSION_AA_MIN, R.PENSION_AA - (adjustedIncome-R.PENSION_AA_TAPER_START)/2);
+  }
+  const pensionHeadroom = pensionAA - totalPensionContribution;
+
+  // ---- marginal band label ----
+  let marginalBand = 'Personal allowance (0%)';
+  if(ani >= R.PA_TAPER_START && ani < R.PA_TAPER_END) marginalBand = 'Personal allowance taper zone';
+  else if(taxableSalary+interestIncome+dividendIncome >= R.ADDITIONAL_THRESHOLD) marginalBand = 'Additional rate (45%)';
+  else if(taxableSalary+interestIncome+dividendIncome >= R.HIGHER_THRESHOLD) marginalBand = 'Higher rate (40%)';
+  else if(taxableSalary+interestIncome+dividendIncome >= PA) marginalBand = 'Basic rate (20%)';
+
+  return {
+    tc, PA, ani, taxableSalary, niableSalary, employeeGrossContribution, employerContribution,
+    cashOutPension, totalPensionContribution,
+    interestIncome, dividendIncome, isaTaxFreeIncome, isaGrowth, pbIncome, pensionGrowth, giaGrowth,
+    nonSavings, savingsTaxCalc, divTaxCalc, incomeTaxTotal,
+    startingRateAvailable, startingRateUsed, psaAmount, psaUsed,
+    divAllowanceUsed, taxableDivRemainder,
+    employeeNI, employerNI,
+    totalCB, hicbc, netCB, hicbcFraction,
+    gains, taxableGain, cgtDue,
+    takeHomeAnnual,
+    isaHeadroom,
+    pensionAA, pensionHeadroom, thresholdIncome, adjustedIncome,
+    marginalBand,
+    perHolding, totalHoldingsValue, lockedValue, accessibleValue,
+    posAfterIncome: pos,
+    S, method
+  };
+}
+
+function currentInputs(overrides){
+  const base = {
+    salary: num('salary'),
+    taxCode: document.getElementById('taxCode').value,
+    pensionPct: num('pensionPct'),
+    pensionMethod: document.querySelector('input[name=method]:checked').value,
+    employerPct: num('employerPct'),
+    children: num('children'),
+    isaUsed: num('isaUsed'),
+    gainsRealised: num('gainsRealised'),
+    holdings: holdings.map(h=>({type:h.type, amount:h.amount, r1:h.r1, r2:h.r2}))
+  };
+  return Object.assign(base, overrides||{});
+}
+
+/* ============================================================
+   RENDER: HOLDINGS CARDS
+   ============================================================ */
+function renderHoldingsGrid(){
+  const container = document.getElementById('holdingsGrid');
+  container.innerHTML = '';
+  holdings.forEach(h=>{
+    const meta = HOLDING_TYPES[h.type];
+    const card = document.createElement('div');
+    card.className = 'holding-card';
+
+    // ---- remove (cross) button, top-right corner of the card ----
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'holding-remove';
+    delBtn.title = 'Remove holding';
+    delBtn.setAttribute('aria-label','Remove holding');
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', ()=>{ holdings = holdings.filter(x=>x.id!==h.id); renderHoldingsGrid(); recalc(); });
+    card.appendChild(delBtn);
+
+    // ---- top row: type selector, amount, and the rate field(s) relevant to this type ----
+    const top = document.createElement('div');
+    top.className = 'holding-card-top';
+
+    const typeField = document.createElement('div');
+    typeField.className = 'field type-field';
+    const typeLabel = document.createElement('label');
+    typeLabel.textContent = 'Holding type';
+    const sel = document.createElement('select');
+    Object.keys(HOLDING_TYPES).forEach(k=>{
+      const opt = document.createElement('option');
+      opt.value = k; opt.textContent = HOLDING_TYPES[k].label;
+      if(k===h.type) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', e=>{ h.type=e.target.value; renderHoldingsGrid(); recalc(); });
+    typeField.appendChild(typeLabel); typeField.appendChild(sel);
+    top.appendChild(typeField);
+
+    const amtField = document.createElement('div');
+    amtField.className = 'field';
+    const amtLabel = document.createElement('label');
+    amtLabel.textContent = 'Amount (£)';
+    const amtInput = document.createElement('input');
+    amtInput.type='number'; amtInput.min=0; amtInput.step=100; amtInput.value=h.amount;
+    amtInput.addEventListener('input', e=>{ h.amount=parseFloat(e.target.value)||0; recalc(); });
+    amtField.appendChild(amtLabel); amtField.appendChild(amtInput);
+    top.appendChild(amtField);
+
+    const r1Field = document.createElement('div');
+    r1Field.className = 'field';
+    const r1Label = document.createElement('label');
+    r1Label.textContent = meta.rate1Label;
+    const r1Input = document.createElement('input');
+    r1Input.type='number'; r1Input.step=0.1; r1Input.value=h.r1;
+    r1Input.addEventListener('input', e=>{ h.r1=parseFloat(e.target.value)||0; recalc(); });
+    r1Field.appendChild(r1Label); r1Field.appendChild(r1Input);
+    top.appendChild(r1Field);
+
+    if(meta.hasRate2){
+      const r2Field = document.createElement('div');
+      r2Field.className = 'field';
+      const r2Label = document.createElement('label');
+      r2Label.textContent = meta.rate2Label;
+      const r2Input = document.createElement('input');
+      r2Input.type='number'; r2Input.step=0.1; r2Input.value=h.r2;
+      r2Input.addEventListener('input', e=>{ h.r2=parseFloat(e.target.value)||0; recalc(); });
+      r2Field.appendChild(r2Label); r2Field.appendChild(r2Input);
+      top.appendChild(r2Field);
+    }
+    card.appendChild(top);
+
+    // ---- footer: computed return/tax mini-stats for this holding ----
+    const footer = document.createElement('div');
+    footer.className = 'holding-card-footer';
+
+    const stats = document.createElement('div');
+    stats.className = 'holding-mini-stats';
+    stats.id = 'holdingStats-' + h.id;
+    footer.appendChild(stats);
+
+    card.appendChild(footer);
+    container.appendChild(card);
+  });
+}
+document.getElementById('addHolding').addEventListener('click', ()=>{
+  holdings.push({id:nextId++, type:'gia', amount:5000, r1:2, r2:5});
+  renderHoldingsGrid(); recalc();
+});
+
+// Computes the return/tax mini-stat blocks shown in each holding card's footer.
+function holdingStatBlocks(h, avgInterestRate, avgDivRate){
+  if(h.type==='taxable_savings'){
+    const tax = h.incomeGross*avgInterestRate, net = h.incomeGross-tax;
+    return [
+      {l:'Interest', v:fmt(h.incomeGross)},
+      {l:'Tax', v:fmt(tax), cls:'tax'},
+      {l:'Net return', v:fmt(net), cls:'net'}
+    ];
+  }
+  if(h.type==='gilts'){
+    const tax = h.incomeGross*avgInterestRate, net = h.incomeGross-tax;
+    return [
+      {l:'Coupon', v:fmt(h.incomeGross)},
+      {l:'Tax', v:fmt(tax), cls:'tax'},
+      {l:'Net return', v:fmt(net), cls:'net'},
+      {l:'Gains', v:'CGT-exempt', cls:'net'}
+    ];
+  }
+  if(h.type==='cash_isa'){
+    return [{l:'Interest (tax-free)', v:fmt(h.incomeGross), cls:'net'}];
+  }
+  if(h.type==='ss_isa'){
+    return [
+      {l:'Yield (tax-free)', v:fmt(h.incomeGross), cls:'net'},
+      {l:'Growth (tax-free)', v:fmt(h.growthGross), cls:'net'}
+    ];
+  }
+  if(h.type==='gia'){
+    const tax = h.incomeGross*avgDivRate, net = h.incomeGross-tax;
+    return [
+      {l:'Dividends', v:fmt(h.incomeGross)},
+      {l:'Tax', v:fmt(tax), cls:'tax'},
+      {l:'Net dividends', v:fmt(net), cls:'net'},
+      {l:'Growth (untaxed until sold)', v:fmt(h.growthGross)}
+    ];
+  }
+  if(h.type==='premium_bonds'){
+    const blocks = [{l:'Expected prizes (tax-free)', v:fmt(h.incomeGross), cls:'net'}];
+    if(h.amt>R.PB_MAX) blocks.push({l:'Above per-person cap', v:'excess of '+fmt(h.amt-R.PB_MAX)+' earns no prizes', cls:'warn'});
+    return blocks;
+  }
+  if(h.type==='pension'){
+    return [{l:'Growth (tax-free, locked)', v:fmt(h.growthGross), cls:'net'}];
+  }
+  return [];
+}
+function updateHoldingCardStats(m){
+  const avgInterestRate = m.interestIncome>0 ? m.savingsTaxCalc.tax/m.interestIncome : 0;
+  const avgDivRate = m.dividendIncome>0 ? m.divTaxCalc.tax/m.dividendIncome : 0;
+  m.perHolding.forEach(h=>{
+    const el = document.getElementById('holdingStats-'+h.id);
+    if(!el) return;
+    const blocks = holdingStatBlocks(h, avgInterestRate, avgDivRate);
+    el.innerHTML = blocks.map(b=>'<div class="holding-mini-stat"><span class="l">'+b.l+'</span><span class="v'+(b.cls?' '+b.cls:'')+'">'+b.v+'</span></div>').join('');
+  });
+}
+
+/* ============================================================
+   RENDER: MAIN DASHBOARD
+   ============================================================ */
+function renderDashboard(m, mWithout, marginal){
+  // marginal band / rate
+  document.getElementById('marginalBand').textContent = m.marginalBand;
+  document.getElementById('marginalBandSub').textContent = 'Based on total taxable income of ' + fmt(m.taxableSalary+m.interestIncome+m.dividendIncome);
+  document.getElementById('marginalRate').textContent = fmtPct(marginal.rate,1);
+  document.getElementById('marginalRateSub').textContent =
+    'Income tax ' + fmtPct(marginal.itRate,1) + ' + NI ' + fmtPct(marginal.niRate,1) +
+    (marginal.hicbcRate>0.0005 ? ' + Child Benefit taper ' + fmtPct(marginal.hicbcRate,1) : '');
+
+  // Personal Allowance: how much of your (post-taper) allowance is used against your salary,
+  // with the taper reduction itself explained underneath.
+  const paUsed = Math.min(m.taxableSalary, m.PA);
+  document.getElementById('paValue').textContent = m.PA>0 ? usedOfTotal(paUsed, m.PA) : '£0 — fully tapered away';
+  document.getElementById('paMeter').style.width = (m.PA>0 ? clamp(paUsed/m.PA*100,0,100) : 100)+'%';
+  const reduction = m.tc.base - m.PA;
+  document.getElementById('paSub').textContent = reduction>1 ?
+    ('Reduced by '+fmt(reduction)+' from base '+fmt(m.tc.base)+' due to taper · '+m.tc.note) : m.tc.note;
+
+  document.getElementById('takeHomeMonthly').textContent = fmt(m.takeHomeAnnual/12);
+  document.getElementById('takeHomeSub').textContent = fmt(m.takeHomeAnnual)+' / yr, after tax, NI, pension & HICBC';
+
+  // Personal Savings Allowance
+  document.getElementById('psaValue').textContent = usedOfTotal(m.psaUsed, m.psaAmount);
+  document.getElementById('psaMeter').style.width = (m.psaAmount>0 ? clamp(m.psaUsed/m.psaAmount*100,0,100) : 0)+'%';
+  document.getElementById('psaSub').textContent = m.psaAmount>0 ?
+    (fmt(Math.max(0,m.psaAmount-m.psaUsed))+' still available tax-free at your PSA rate') : 'No PSA available at the additional rate';
+
+  // Starting rate for savings
+  if(m.startingRateAvailable>0){
+    document.getElementById('srsValue').textContent = usedOfTotal(m.startingRateUsed, m.startingRateAvailable);
+    document.getElementById('srsMeter').style.width = clamp(m.startingRateUsed/m.startingRateAvailable*100,0,100)+'%';
+    document.getElementById('srsSub').textContent = fmt(Math.max(0,m.startingRateAvailable-m.startingRateUsed))+' remaining at the 0% starting rate';
+  } else {
+    document.getElementById('srsValue').textContent = 'Not available';
+    document.getElementById('srsMeter').style.width = '0%';
+    document.getElementById('srsSub').textContent = 'Non-savings income is already above the Personal Allowance + £5,000 band';
+  }
+
+  // Dividend allowance
+  document.getElementById('divValue').textContent = usedOfTotal(m.divAllowanceUsed, R.DIV_ALLOWANCE);
+  document.getElementById('divMeter').style.width = clamp(m.divAllowanceUsed/R.DIV_ALLOWANCE*100,0,100)+'%';
+  document.getElementById('divSub').textContent = m.dividendIncome>0 ?
+    (fmt(Math.max(0,R.DIV_ALLOWANCE-m.divAllowanceUsed))+' of dividend income still tax-free') : 'No dividend income this year';
+
+  // CGT annual exempt amount
+  const cgtUsed = Math.min(m.gains, R.CGT_AEA);
+  document.getElementById('cgtValue').textContent = usedOfTotal(cgtUsed, R.CGT_AEA);
+  document.getElementById('cgtMeter').style.width = clamp(cgtUsed/R.CGT_AEA*100,0,100)+'%';
+  document.getElementById('cgtSub').textContent = m.gains>0 ? ('Gain '+fmt(m.gains)+' → CGT due '+fmt(m.cgtDue)) : 'No gains realised this year';
+
+  document.getElementById('niValue').textContent = fmt(m.employeeNI);
+  document.getElementById('niSub').textContent = 'Employer NI: ' + fmt(m.employerNI) + ' (not deducted from you)';
+
+  // ISA allowance
+  const isaUsedAmt = num('isaUsed');
+  document.getElementById('isaHeadroom').textContent = usedOfTotal(isaUsedAmt, R.ISA_ALLOWANCE);
+  document.getElementById('isaMeter').style.width = clamp(isaUsedAmt/R.ISA_ALLOWANCE*100,0,100)+'%';
+  document.getElementById('isaHeadroomSub').textContent = fmt(m.isaHeadroom)+' headroom left this year';
+
+  // Pension annual allowance
+  document.getElementById('pensionHeadroom').textContent = usedOfTotal(m.totalPensionContribution, m.pensionAA);
+  const pensionMeterEl = document.getElementById('pensionMeter');
+  pensionMeterEl.style.width = clamp(m.totalPensionContribution/Math.max(1,m.pensionAA)*100,0,100)+'%';
+  pensionMeterEl.parentElement.classList.toggle('over', m.pensionHeadroom<0);
+  const pensionHeadroomSubEl = document.getElementById('pensionHeadroomSub');
+  pensionHeadroomSubEl.textContent = (m.pensionHeadroom<0 ? 'Over allowance by '+fmt(-m.pensionHeadroom)+' — check carry-forward' :
+    fmt(m.pensionHeadroom)+' headroom left') + (m.pensionAA<R.PENSION_AA ? ' (allowance tapered)' : '');
+  pensionHeadroomSubEl.classList.toggle('warn', m.pensionHeadroom<0);
+
+  document.getElementById('cbValue').textContent = fmt(m.netCB);
+  document.getElementById('cbSub').textContent = m.totalCB>0 ?
+    (fmt(m.totalCB)+' claimed, '+fmt(m.hicbc)+' charged back ('+Math.round(m.hicbcFraction*100)+'% taper)') : 'No children on Child Benefit';
+
+  // take-home comparison
+  document.getElementById('thWith').textContent = fmt(m.takeHomeAnnual/12);
+  document.getElementById('thWithout').textContent = fmt(mWithout.takeHomeAnnual/12);
+  document.getElementById('thCost').textContent = fmt((mWithout.takeHomeAnnual-m.takeHomeAnnual)/12);
+  document.getElementById('thPot').textContent = fmt(m.totalPensionContribution);
+  const reliefRate = m.employeeGrossContribution>0 ? 1-((mWithout.takeHomeAnnual-m.takeHomeAnnual)/m.employeeGrossContribution) : 0;
+  document.getElementById('thExplain').textContent = m.employeeGrossContribution>0 ?
+    ('Contributing '+fmt(m.employeeGrossContribution)+' (gross) via '+methodLabel(m.method)+' costs '+fmt(mWithout.takeHomeAnnual-m.takeHomeAnnual)+
+     ' a year of take-home pay — an effective relief rate of '+fmtPct(reliefRate,0)+', including employer top-up of '+fmt(m.employerContribution)+'.')
+    : 'No employee pension contribution currently set.';
+
+  // money split
+  const total = m.totalHoldingsValue||1;
+  const accPct = m.accessibleValue/total*100, lockPct = m.lockedValue/total*100;
+  const bar = document.getElementById('splitBar');
+  bar.innerHTML = '';
+  if(m.accessibleValue>0){
+    const d1=document.createElement('div'); d1.className='split-accessible'; d1.style.width=accPct+'%';
+    d1.textContent = accPct>12? Math.round(accPct)+'% accessible':'';
+    bar.appendChild(d1);
+  }
+  if(m.lockedValue>0){
+    const d2=document.createElement('div'); d2.className='split-locked'; d2.style.width=lockPct+'%';
+    d2.textContent = lockPct>12? Math.round(lockPct)+'% locked':'';
+    bar.appendChild(d2);
+  }
+  document.getElementById('splitAccessible').textContent = fmt(m.accessibleValue);
+  document.getElementById('splitLocked').textContent = fmt(m.lockedValue);
+  document.getElementById('splitTotal').textContent = fmt(m.totalHoldingsValue);
+}
+function methodLabel(mth){
+  return mth==='salsac'?'salary sacrifice':(mth==='netpay'?'a net pay arrangement':'relief at source');
+}
+
+/* ============================================================
+   RENDER: PER-HOLDING TABLE
+   ============================================================ */
+function renderPerHolding(m){
+  const interestPoolTax = m.savingsTaxCalc.tax;
+  const interestPoolIncome = m.interestIncome;
+  const avgInterestRate = interestPoolIncome>0 ? interestPoolTax/interestPoolIncome : 0;
+
+  const divPoolTax = m.divTaxCalc.tax;
+  const divPoolIncome = m.dividendIncome;
+  const avgDivRate = divPoolIncome>0 ? divPoolTax/divPoolIncome : 0;
+
+  const body = document.getElementById('perHoldingBody');
+  body.innerHTML='';
+  let totAmt=0, totInc=0, totGrowth=0, totTax=0, totNet=0;
+
+  m.perHolding.forEach(h=>{
+    let tax=0, note='';
+    if(h.type==='taxable_savings' || h.type==='gilts'){
+      tax = h.incomeGross*avgInterestRate;
+      note = h.type==='gilts' ? 'Coupon taxed as interest; gilt capital gains are CGT-exempt.' : 'Taxed at your pooled average interest rate.';
+    } else if(h.type==='gia'){
+      tax = h.incomeGross*avgDivRate;
+      note = 'Dividend taxed at pooled average rate. Growth is unrealised (no CGT until sold).';
+    } else if(h.type==='pension'){
+      note = 'Tax-free while invested; locked until minimum pension age.';
+    } else if(h.type==='cash_isa' || h.type==='ss_isa'){
+      note = 'Always tax-free inside an ISA.';
+    } else if(h.type==='premium_bonds'){
+      note = h.amt>R.PB_MAX ? ('Above the £'+R.PB_MAX.toLocaleString('en-GB')+' per-person cap — excess earns no prizes.') : 'Prizes are tax-free winnings, not interest.';
+    }
+    const net = h.incomeGross + h.growthGross - tax;
+    totAmt+=h.amt; totInc+=h.incomeGross; totGrowth+=h.growthGross; totTax+=tax; totNet+=net;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+h.meta.label+'</td>'+
+      '<td><span class="tag '+(h.meta.wrapper==='Pension'?'locked':(h.meta.category==='taxfree'?'free':'taxed'))+'">'+h.meta.wrapper+'</span></td>'+
+      '<td class="num">'+fmt(h.amt)+'</td>'+
+      '<td class="num">'+fmt(h.incomeGross)+'</td>'+
+      '<td class="num">'+fmt(h.growthGross)+'</td>'+
+      '<td class="num">'+fmt(tax)+'</td>'+
+      '<td class="num">'+fmt(net)+'</td>'+
+      '<td class="faint">'+note+'</td>';
+    body.appendChild(tr);
+  });
+
+  document.getElementById('perHoldingTotals').innerHTML =
+    '<td>Total</td><td></td>'+
+    '<td class="num">'+fmt(totAmt)+'</td>'+
+    '<td class="num">'+fmt(totInc)+'</td>'+
+    '<td class="num">'+fmt(totGrowth)+'</td>'+
+    '<td class="num">'+fmt(totTax)+'</td>'+
+    '<td class="num">'+fmt(totNet)+'</td><td></td>';
+}
+
+/* ============================================================
+   RENDER: INCOME STACKING BAR
+   ============================================================ */
+function renderStack(m){
+  const scaleMax = Math.ceil(Math.max(150000, (m.posAfterIncome)*1.15)/10000)*10000;
+  const basicUpper = Math.min(Math.max(0,m.PA) + R.BASIC_BAND_WIDTH, R.ADDITIONAL_THRESHOLD);
+  const axis = document.getElementById('stackAxis');
+  axis.innerHTML='';
+  [0, m.PA, basicUpper, R.ADDITIONAL_THRESHOLD].forEach(v=>{
+    if(v>scaleMax) return;
+    const s = document.createElement('span');
+    s.style.left = (v/scaleMax*100)+'%';
+    s.textContent = '£'+Math.round(v).toLocaleString('en-GB');
+    axis.appendChild(s);
+  });
+
+  function seg(container, start, amount, cls){
+    if(amount<=0.5) return;
+    const d = document.createElement('div');
+    d.className='seg '+cls;
+    d.style.left=(start/scaleMax*100)+'%';
+    d.style.width=(amount/scaleMax*100)+'%';
+    d.title = cls+': '+fmt(amount);
+    container.appendChild(d);
+  }
+  function classify(rate){
+    if(rate<=0.0001) return 'free';
+    if(rate<=0.21) return 'b1';
+    if(rate<=0.41) return 'b2';
+    return 'b3';
+  }
+
+  // salary row
+  const rowSalary = document.getElementById('rowSalary');
+  rowSalary.querySelectorAll('.seg').forEach(e=>e.remove());
+  let cur=0;
+  m.nonSavings.breakdown.forEach(b=>{ seg(rowSalary, cur, b.amount, classify(b.rate)); cur+=b.amount; });
+
+  // interest row
+  const rowInterest = document.getElementById('rowInterest');
+  rowInterest.querySelectorAll('.seg').forEach(e=>e.remove());
+  let posI = m.taxableSalary;
+  seg(rowInterest, posI, m.startingRateUsed+m.psaUsed, 'free');
+  posI += m.startingRateUsed+m.psaUsed;
+  m.savingsTaxCalc.breakdown.forEach(b=>{ seg(rowInterest, posI, b.amount, classify(b.rate)); posI+=b.amount; });
+
+  // dividends row
+  const rowDiv = document.getElementById('rowDividends');
+  rowDiv.querySelectorAll('.seg').forEach(e=>e.remove());
+  let posD = m.taxableSalary+m.interestIncome;
+  seg(rowDiv, posD, m.divAllowanceUsed, 'free');
+  posD += m.divAllowanceUsed;
+  m.divTaxCalc.breakdown.forEach(b=>{ seg(rowDiv, posD, b.amount, classify(b.rate)); posD+=b.amount; });
+}
+
+/* ============================================================
+   OBSERVATIONS
+   ============================================================ */
+function renderObservations(m, marginal){
+  const list = document.getElementById('observations');
+  list.innerHTML='';
+  const obs = [];
+
+  // ISA move opportunity
+  const taxableInterestHoldings = m.perHolding.filter(h=>h.type==='taxable_savings');
+  const taxableInterestValue = taxableInterestHoldings.reduce((a,h)=>a+h.amt,0);
+  if(m.isaHeadroom>0 && taxableInterestValue>0){
+    const moveAmt = Math.min(m.isaHeadroom, taxableInterestValue);
+    const avgRate = taxableInterestHoldings.reduce((a,h)=>a+h.amt*(h.r1/100),0) / Math.max(1,taxableInterestValue);
+    const interestPoolTax = m.savingsTaxCalc.tax, interestPoolIncome=m.interestIncome;
+    const avgTaxRate = interestPoolIncome>0? interestPoolTax/interestPoolIncome:0;
+    const taxSaved = moveAmt*avgRate*avgTaxRate;
+    if(taxSaved>1){
+      obs.push({cls:'free', ico:'💡', html:'<b>ISA move:</b> shifting '+fmt(moveAmt)+' from Taxable Savings into your remaining '+fmt(m.isaHeadroom)+' ISA headroom would save roughly <b>'+fmt(taxSaved)+'/yr</b> in tax at your current pooled savings rate of '+fmtPct(avgTaxRate,0)+'.'});
+    }
+  }
+
+  // 60% taper trap
+  if(m.ani>R.PA_TAPER_START && m.ani<R.PA_TAPER_END){
+    const excess = m.ani-R.PA_TAPER_START;
+    obs.push({cls:'hot', ico:'⚠️', html:'<b>Personal allowance taper:</b> your adjusted net income of '+fmt(m.ani)+' is '+fmt(excess)+' into the £100k–£125,140 taper zone, where the effective marginal rate is around <b>'+fmtPct(marginal.rate,0)+'</b>. An extra pension contribution of '+fmt(excess)+' (gross) would restore your full Personal Allowance.'});
+  } else if(m.ani<=R.PA_TAPER_START && m.ani>R.PA_TAPER_START-10000){
+    obs.push({cls:'warn', ico:'👀', html:'<b>Approaching the taper:</b> you\'re '+fmt(R.PA_TAPER_START-m.ani)+' below the £100,000 Personal Allowance taper. Crossing it pushes your marginal rate to roughly 60%+.'});
+  }
+
+  // PSA cliff — moving from basic to higher rate drops PSA 1000->500 (or 500->0)
+  const salaryPlusInterestTop = m.taxableSalary+m.interestIncome;
+  if(salaryPlusInterestTop < R.HIGHER_THRESHOLD && salaryPlusInterestTop > R.HIGHER_THRESHOLD-2000){
+    obs.push({cls:'warn', ico:'📉', html:'<b>PSA cliff ahead:</b> '+fmt(R.HIGHER_THRESHOLD-salaryPlusInterestTop)+' more taxable income would tip you into higher rate, cutting your Personal Savings Allowance from £1,000 to £500 — costing up to '+fmt(500*0.4)+' extra tax on interest alone.'});
+  } else if(salaryPlusInterestTop < R.ADDITIONAL_THRESHOLD && salaryPlusInterestTop > R.ADDITIONAL_THRESHOLD-2000){
+    obs.push({cls:'warn', ico:'📉', html:'<b>PSA cliff ahead:</b> '+fmt(R.ADDITIONAL_THRESHOLD-salaryPlusInterestTop)+' more taxable income would tip you into additional rate, removing your remaining £500 Personal Savings Allowance entirely.'});
+  }
+
+  // premium bond gross-up rate
+  const pbHolding = m.perHolding.find(h=>h.type==='premium_bonds');
+  if(pbHolding){
+    const marginalSavingsRate = marginal.savingsRate;
+    const grossUp = marginalSavingsRate<1 ? (pbHolding.r1/100)/(1-marginalSavingsRate) : Infinity;
+    obs.push({cls:'free', ico:'🎟️', html:'<b>Premium Bond gross-up:</b> at your marginal savings tax rate of '+fmtPct(marginalSavingsRate,0)+', a '+ (pbHolding.r1) +'% tax-free prize rate is equivalent to a taxable savings account paying <b>'+fmtPct(grossUp,2)+'</b> gross.'});
+  }
+
+  // Bed & ISA
+  const giaHoldings = m.perHolding.filter(h=>h.type==='gia');
+  const giaValue = giaHoldings.reduce((a,h)=>a+h.amt,0);
+  if(giaValue>0 && m.isaHeadroom>0){
+    const moveAmt = Math.min(giaValue, m.isaHeadroom);
+    obs.push({cls:'free', ico:'🛏️', html:'<b>Bed & ISA:</b> you could sell up to '+fmt(moveAmt)+' of GIA holdings and rebuy inside your ISA, using up to '+fmt(Math.min(R.CGT_AEA,moveAmt))+' of your £3,000 CGT annual exempt amount tax-free, moving future growth and income out of tax permanently.'});
+  }
+
+  // CGT harvesting
+  if(giaValue>0){
+    if(m.gains<=0){
+      obs.push({cls:'warn', ico:'✂️', html:'<b>CGT harvesting:</b> your £3,000 annual exempt amount doesn\'t carry forward. With '+fmt(giaValue)+' in GIA holdings, consider realising up to £3,000 of gains this year to use the allowance before 5 April.'});
+    } else if(m.gains < R.CGT_AEA){
+      obs.push({cls:'warn', ico:'✂️', html:'<b>CGT harvesting:</b> you\'ve realised '+fmt(m.gains)+' of gains — '+fmt(R.CGT_AEA-m.gains)+' of your £3,000 exempt amount is still unused this tax year.'});
+    }
+  }
+
+  // HICBC full clawback
+  if(m.hicbcFraction>=1 && m.totalCB>0){
+    obs.push({cls:'hot', ico:'👶', html:'<b>Child Benefit fully clawed back:</b> adjusted net income of '+fmt(m.ani)+' is at or above £80,000, so all '+fmt(m.totalCB)+' of Child Benefit is repaid via HICBC. A pension contribution of '+fmt(m.ani-R.HICBC_LOWER)+' (gross) would restore it in full.'});
+  } else if(m.hicbcFraction>0 && m.hicbcFraction<1){
+    obs.push({cls:'warn', ico:'👶', html:'<b>Child Benefit taper:</b> you\'re keeping '+fmtPct(1-m.hicbcFraction,0)+' of your Child Benefit. A further pension contribution of '+fmt(R.HICBC_UPPER-m.ani)+' (gross) would take you below the £80,000 mark, or '+fmt(m.ani-R.HICBC_LOWER)+' would clear the charge entirely.'});
+  }
+
+  // pension AA breach
+  if(m.pensionHeadroom<0){
+    obs.push({cls:'hot', ico:'🚫', html:'<b>Pension annual allowance exceeded:</b> total contributions of '+fmt(m.totalPensionContribution)+' are '+fmt(-m.pensionHeadroom)+' over your '+fmt(m.pensionAA)+' allowance. Check carry-forward from the previous three tax years before an annual allowance charge applies.'});
+  }
+
+  if(obs.length===0){
+    obs.push({cls:'free', ico:'✅', html:'No immediate rule-based flags — your allowances and thresholds look reasonably well used for the figures entered.'});
+  }
+
+  obs.forEach(o=>{
+    const d = document.createElement('div');
+    d.className='obs '+o.cls;
+    d.innerHTML = '<span class="ico">'+o.ico+'</span><span>'+o.html+'</span>';
+    list.appendChild(d);
+  });
+}
+
+/* ============================================================
+   MARGINAL RATE (via finite-difference on the model)
+   ============================================================ */
+function computeMarginal(){
+  const base = currentInputs();
+  const m0 = computeModel(base);
+  const delta = 1000;
+  const m1 = computeModel(Object.assign({}, base, {salary: base.salary+delta}));
+  const dIT = (m1.incomeTaxTotal - m0.incomeTaxTotal)/delta;
+  const dNI = (m1.employeeNI - m0.employeeNI)/delta;
+  const dHICBC = (m1.hicbc - m0.hicbc)/delta;
+  const rate = dIT+dNI+dHICBC;
+
+  // marginal rate specifically on savings income (for premium bond gross-up), using an interest bump instead
+  let savingsRate = 0;
+  if(base.holdings.some(h=>h.type==='taxable_savings')){
+    const h2 = JSON.parse(JSON.stringify(base));
+    // bump the first taxable_savings holding's amount to nudge interest income up by ~ delta via rate; simpler: add small extra to a synthetic interest amount by adjusting salary substitute
+  }
+  // simpler: compute marginal rate on an extra £1000 of interest income directly by adjusting holdings temporarily
+  const bumpedHoldings = base.holdings.slice();
+  bumpedHoldings.push({type:'taxable_savings', amount:delta, r1:100, r2:0}); // amount*100%/100=delta of interest
+  const mI = computeModel(Object.assign({}, base, {holdings:bumpedHoldings}));
+  savingsRate = (mI.incomeTaxTotal - m0.incomeTaxTotal)/delta;
+
+  return {rate: Math.max(0,rate), itRate:Math.max(0,dIT), niRate:Math.max(0,dNI), hicbcRate:Math.max(0,dHICBC), savingsRate:clamp(savingsRate,0,0.99)};
+}
+
+/* ============================================================
+   OPTIMISER TOOL
+   ============================================================ */
+let currentGoal = 'pa100k';
+document.querySelectorAll('#goalBtns button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#goalBtns button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentGoal = btn.dataset.goal;
+    document.getElementById('customTargetWrap').style.display = currentGoal==='custom' ? 'block':'none';
+    renderOptimiser();
+  });
+});
+document.getElementById('customTarget').addEventListener('input', renderOptimiser);
+document.querySelectorAll('#goalBtns button')[0].classList.add('active');
+
+function renderOptimiser(){
+  const base = currentInputs();
+  const m0 = computeModel(base);
+  let target;
+  if(currentGoal==='pa100k') target = R.PA_TAPER_START;
+  else if(currentGoal==='hr50270') target = R.HIGHER_THRESHOLD;
+  else if(currentGoal==='cb60k') target = R.HICBC_LOWER;
+  else target = num('customTarget');
+
+  const out = document.getElementById('optimiserOut');
+  const extra = Math.max(0, m0.ani - target);
+
+  if(extra<=0.5){
+    out.innerHTML = '<div class="obs free"><span class="ico">✅</span><span>You\'re already at or below an adjusted net income of '+fmt(target)+' — no extra contribution needed for this goal.</span></div>';
+    return;
+  }
+
+  // extra gross pension contribution needed = extra (since ANI falls 1:1 with gross contribution via RAS/netpay logic; for salsac it also falls ~1:1 via reduced salary)
+  const extraPct = base.salary>0 ? (extra/base.salary*100) : 0;
+  const scenario = Object.assign({}, base, {pensionPct: base.pensionPct + extraPct});
+  const mS = computeModel(scenario);
+  const mS0 = computeModel(Object.assign({}, scenario, {pensionPct:0}));
+  const m00 = computeModel(Object.assign({}, base, {pensionPct:0}));
+
+  const netCost = (mS0.takeHomeAnnual - mS.takeHomeAnnual) - (m00.takeHomeAnnual - m0.takeHomeAnnual);
+  // cost specifically of the EXTRA slice = compare scenario take-home vs base take-home directly
+  const directCost = m0.takeHomeAnnual - mS.takeHomeAnnual;
+  const reliefRate = extra>0 ? 1-(directCost/extra) : 0;
+  const cbGain = mS.netCB - m0.netCB;
+  const overAA = mS.pensionHeadroom<0;
+
+  out.innerHTML =
+    '<div class="kv"><span>Extra gross pension contribution needed</span><b>'+fmt(extra)+'</b></div>'+
+    '<div class="kv"><span>New adjusted net income</span><b>'+fmt(mS.ani)+'</b></div>'+
+    '<div class="kv"><span>Cost from take-home pay (this year)</span><b>'+fmt(directCost)+'</b></div>'+
+    '<div class="kv"><span>Effective relief rate</span><b>'+fmtPct(reliefRate,0)+'</b></div>'+
+    (cbGain>1 ? '<div class="kv"><span>Extra Child Benefit recovered</span><b>'+fmt(cbGain)+'</b></div>' : '') +
+    '<div class="kv"><span>New effective marginal rate</span><b>'+fmtPct(computeMarginalFor(scenario),1)+'</b></div>'+
+    (overAA ? '<div class="obs hot" style="margin-top:8px;"><span class="ico">🚫</span><span>This would exceed your pension annual allowance headroom of '+fmt(m0.pensionHeadroom)+' — check carry-forward from previous years.</span></div>' : '');
+}
+function computeMarginalFor(inp){
+  const m0 = computeModel(inp);
+  const delta=1000;
+  const m1 = computeModel(Object.assign({},inp,{salary:inp.salary+delta}));
+  const rate = ((m1.incomeTaxTotal-m0.incomeTaxTotal)+(m1.employeeNI-m0.employeeNI)+(m1.hicbc-m0.hicbc))/delta;
+  return Math.max(0,rate);
+}
+
+/* ============================================================
+   WRAPPER ALLOCATION SOLVER
+   ============================================================ */
+document.getElementById('newMoney').addEventListener('input', renderSolver);
+function renderSolver(){
+  const base = currentInputs();
+  const m0 = computeModel(base);
+  const out = document.getElementById('solverOut');
+  let money = Math.max(0, num('newMoney'));
+  const total = money;
+
+  // blended yield assumption from existing taxable holdings, else default 4%
+  const taxableHoldings = m0.perHolding.filter(h=>h.type==='taxable_savings'||h.type==='gia');
+  const taxableValue = taxableHoldings.reduce((a,h)=>a+h.amt,0);
+  const blendedYield = taxableValue>0 ? taxableHoldings.reduce((a,h)=>a+h.amt*(h.r1/100),0)/taxableValue : 0.04;
+
+  const marginal = computeMarginal();
+  const steps = [];
+
+  // 1. ISA
+  const isaAmt = Math.min(money, m0.isaHeadroom);
+  if(isaAmt>0){
+    const taxSaved = isaAmt*blendedYield*marginal.savingsRate;
+    steps.push({wrapper:'ISA', amount:isaAmt, why:'Fills remaining '+fmt(m0.isaHeadroom)+' ISA headroom — income and growth become entirely tax-free.', saved:taxSaved});
+    money -= isaAmt;
+  }
+
+  // 2. Pension (only worth flagging if marginal rate is meaningfully high, or in taper/HICBC zone)
+  const pensionWorthwhile = marginal.rate >= 0.32 || (m0.ani>R.PA_TAPER_START && m0.ani<R.PA_TAPER_END) || (m0.hicbcFraction>0 && m0.hicbcFraction<1);
+  if(money>0 && pensionWorthwhile && m0.pensionHeadroom>0){
+    const pensionAmt = Math.min(money, Math.max(0,m0.pensionHeadroom));
+    if(pensionAmt>0){
+      const taxSaved = pensionAmt*marginal.rate;
+      steps.push({wrapper:'Pension', amount:pensionAmt, why:'Your marginal rate is '+fmtPct(marginal.rate,0)+' — pension relief is claimed at this rate now, versus tax on withdrawal later.', saved:taxSaved});
+      money -= pensionAmt;
+    }
+  }
+
+  // 3. GIA (remainder)
+  if(money>0){
+    const cgtNote = m0.gains<R.CGT_AEA ? (' You still have '+fmt(R.CGT_AEA-m0.gains)+' of CGT allowance unused this year.') : '';
+    steps.push({wrapper:'GIA', amount:money, why:'Remaining money after ISA'+(pensionWorthwhile?' and pension':'')+' headroom. Uses the £500 dividend allowance and £3,000 CGT exempt amount each year.'+cgtNote, saved:0});
+    money = 0;
+  }
+
+  let html = '<table><thead><tr><th>Priority</th><th>Wrapper</th><th class="num">Amount</th><th>Rationale</th><th class="num">Est. tax saved/yr</th></tr></thead><tbody>';
+  steps.forEach((s,i)=>{
+    html += '<tr><td><span class="rank">'+(i+1)+'</span></td><td>'+s.wrapper+'</td><td class="num">'+fmt(s.amount)+'</td><td class="faint">'+s.why+'</td><td class="num">'+(s.saved>0?fmt(s.saved):'—')+'</td></tr>';
+  });
+  html += '</tbody></table>';
+  html += '<p class="faint" style="margin-top:8px;">Assumes a blended yield of '+fmtPct(blendedYield,1)+' from your current taxable holdings (used to estimate tax saved). Heuristic ordering, not a full optimisation across risk, liquidity or time horizon.</p>';
+  out.innerHTML = html;
+}
+
+/* ============================================================
+   MAIN RECALC
+   ============================================================ */
+function recalc(){
+  const inp = currentInputs();
+  const m = computeModel(inp);
+  const mWithout = computeModel(Object.assign({}, inp, {pensionPct:0}));
+  const marginal = computeMarginal();
+
+  renderDashboard(m, mWithout, marginal);
+  updateHoldingCardStats(m);
+  renderPerHolding(m);
+  renderStack(m);
+  renderObservations(m, marginal);
+  renderOptimiser();
+  renderSolver();
+
+  // method hint
+  const methodHints = {
+    salsac: 'Salary is contractually reduced; both employee & employer NI are saved on the sacrificed amount.',
+    ras: 'You pay 80% net and the provider reclaims the 20% top-up; any higher/additional-rate relief comes back via your tax code or Self Assessment. Shown here as the full-year position, so it matches net pay.',
+    netpay: 'Contribution is deducted from gross pay before tax is calculated; full relief is automatic, but NI is unaffected.'
+  };
+  document.getElementById('methodHint').textContent = methodHints[inp.pensionMethod];
+
+  const tc = parseTaxCode(inp.taxCode);
+  document.getElementById('taxCodeHint').textContent = tc.note;
+
+  document.getElementById('pensionPctMonthly').textContent = '≈ ' + fmt(m.employeeGrossContribution/12) + ' / month (gross)';
+  document.getElementById('employerPctMonthly').textContent = '≈ ' + fmt(m.employerContribution/12) + ' / month';
+
+  document.querySelectorAll('#methodRadios label').forEach(l=>{
+    const input = l.querySelector('input');
+    l.classList.toggle('active', input.checked);
+  });
+}
+
+/* ============================================================
+   EVENTS & INIT
+   ============================================================ */
+['salary','taxCode','employerPct','children','isaUsed','gainsRealised','pensionPct'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', recalc);
+});
+document.querySelectorAll('input[name=method]').forEach(r=>r.addEventListener('change', recalc));
+
+renderHoldingsGrid();
+recalc();
+
+})();
+</script>
+</body>
+</html>
