@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redact PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --desk:#E9EAEE;
+    --sheet:#FFFFFF;
+    --ink:#15171F;
+    --soft:#5A606E;
+    --rule:#CDD1DA;
+    --accent:#0E6C63;
+    --accent-deep:#0A524B;
+    --accent-wash:#DCEDEA;
+    --alert:#9E2A21;
+    --alert-wash:#F7E7E5;
+    --r:6px;
+    --gap:20px;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+
+  body{
+    margin:0;
+    background:var(--desk);
+    color:var(--ink);
+    font:400 16px/1.5 "IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-variant-numeric:tabular-nums;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 72px}
+  @media (max-width:560px){.wrap{padding:28px 16px 56px}}
+
+  /* ---- masthead ---- */
+  .masthead{
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;
+    padding-bottom:18px;margin-bottom:28px;
+    border-bottom:1px solid var(--rule);
+  }
+  .masthead h1{margin:0;font-size:29px;font-weight:600;letter-spacing:-.018em}
+  .masthead p{margin:0;color:var(--soft);font-size:14.5px}
+
+  /* ---- two-pane work surface ---- */
+  .surface{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--gap);align-items:start}
+  @media (max-width:900px){.surface{grid-template-columns:minmax(0,1fr)}}
+
+  /* ---- drop zone ---- */
+  .drop{
+    display:block;width:100%;
+    background:var(--sheet);
+    border:1px dashed var(--rule);
+    border-radius:var(--r);
+    padding:34px 24px 30px;
+    text-align:center;cursor:pointer;
+    font:inherit;color:inherit;
+    transition:border-color .15s, background .15s;
+  }
+  .drop:hover{border-color:var(--accent)}
+  .drop:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .drop.hot{border-color:var(--accent);border-style:solid;background:var(--accent-wash)}
+
+  .sheetmark{position:relative;height:56px;width:46px;margin:0 auto 18px;
+    background:var(--sheet);border:1px solid var(--rule);border-radius:2px;
+    transform:rotate(-3deg);transition:transform .28s cubic-bezier(.2,.7,.3,1)}
+  .sheetmark i{position:absolute;left:8px;height:4px;background:#C9CED8;border-radius:1px}
+  .sheetmark i:nth-child(1){top:11px;width:28px}
+  .sheetmark i:nth-child(2){top:20px;width:20px;background:var(--ink)}
+  .sheetmark i:nth-child(3){top:29px;width:26px}
+  .sheetmark i:nth-child(4){top:38px;width:14px;background:var(--ink)}
+  .drop.hot .sheetmark{transform:none;border-color:var(--accent)}
+
+  .drop b{display:block;font-weight:500;font-size:17px;margin-bottom:4px}
+  .drop span{color:var(--soft);font-size:14px}
+
+  /* ---- toolbar ---- */
+  .toolbar{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;
+    margin:0 0 12px;
+  }
+  .toolbar h2{margin:0;font-size:15px;font-weight:600;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .toolbar .filler{flex:1}
+
+  .plain{
+    background:none;border:0;padding:4px 2px;
+    font:inherit;font-size:14px;color:var(--accent);
+    cursor:pointer;border-radius:3px;
+  }
+  .plain:hover:not(:disabled){color:var(--accent-deep);text-decoration:underline}
+  .plain:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .plain:disabled{color:#AFB5C0;cursor:default}
+
+  .seg{display:inline-flex;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--sheet)}
+  .seg button{
+    background:none;border:0;padding:5px 11px;font:inherit;font-size:13.5px;color:var(--soft);cursor:pointer;
+  }
+  .seg button + button{border-left:1px solid var(--rule)}
+  .seg button[aria-pressed=true]{background:var(--accent-wash);color:var(--accent-deep);font-weight:500}
+  .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+  /* ---- pages ---- */
+  .pages{display:flex;flex-direction:column;align-items:center;gap:18px}
+  .page{
+    position:relative;width:100%;max-width:820px;
+    background:var(--sheet);
+    box-shadow:0 0 0 1px var(--rule), 0 2px 6px rgba(21,23,31,.06);
+  }
+  .page canvas{display:block;width:100%;height:100%}
+  .page .num{
+    position:absolute;right:100%;top:0;margin-right:10px;
+    font-size:12.5px;color:var(--soft);
+  }
+  @media (max-width:1000px){.page .num{right:auto;left:0;top:auto;bottom:100%;margin:0 0 2px}}
+
+  .overlay{position:absolute;inset:0}
+  .overlay.draw{cursor:crosshair;touch-action:none}
+
+  .mask{
+    position:absolute;background:#000;
+    outline:1px solid rgba(0,0,0,.0);
+  }
+  .mask.white{background:#fff;outline:1px dashed #9AA1AE}
+  .mask.ghost{background:rgba(14,108,99,.18);outline:1.5px solid var(--accent)}
+  .mask .x{
+    position:absolute;top:-10px;right:-10px;
+    width:22px;height:22px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--sheet);color:var(--ink);
+    border:1px solid var(--rule);padding:0;cursor:pointer;
+    opacity:0;transition:opacity .12s;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+  }
+  .mask:hover .x,.mask .x:focus-visible{opacity:1}
+  .mask .x:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  @media (hover:none){.mask .x{opacity:1}}
+
+  /* ---- side panel ---- */
+  .panel{
+    background:var(--sheet);
+    border:1px solid var(--rule);
+    border-radius:var(--r);
+    padding:18px;
+    position:sticky;top:24px;
+    max-height:calc(100vh - 48px);overflow:auto;
+  }
+  @media (max-width:900px){.panel{position:static;max-height:none;order:-1}}
+
+  .panel h2{margin:0 0 12px;font-size:15px;font-weight:600}
+  .panel h3{margin:0 0 8px;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .block{padding:16px 0;border-top:1px solid var(--rule)}
+  .block:first-of-type{border-top:0;padding-top:0}
+
+  label{display:block;font-size:13.5px;color:var(--soft);margin-bottom:5px}
+  input[type=text],select{
+    width:100%;padding:8px 10px;
+    font:inherit;font-size:14.5px;color:var(--ink);
+    background:var(--sheet);
+    border:1px solid var(--rule);border-radius:4px;
+  }
+  input[type=text]:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+
+  .findrow{display:flex;gap:6px}
+  .findrow input{flex:1;min-width:0}
+
+  .btn{
+    padding:8px 12px;font:inherit;font-size:14px;font-weight:500;
+    color:var(--accent-deep);background:var(--accent-wash);
+    border:1px solid transparent;border-radius:4px;cursor:pointer;white-space:nowrap;
+  }
+  .btn:hover:not(:disabled){border-color:var(--accent)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn:disabled{opacity:.45;cursor:default}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{
+    padding:3px 10px;font:inherit;font-size:13px;color:var(--soft);
+    background:var(--sheet);border:1px solid var(--rule);border-radius:999px;cursor:pointer;
+  }
+  .chip:hover:not(:disabled){border-color:var(--accent);color:var(--accent-deep)}
+  .chip:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .chip:disabled{opacity:.45;cursor:default}
+
+  .check{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;color:var(--ink);margin:10px 0 0;cursor:pointer}
+  .check input{margin:3px 0 0;accent-color:var(--accent)}
+
+  .tiny{margin:8px 0 0;font-size:13px;color:var(--soft);line-height:1.45;min-height:1.2em}
+  .tiny.err{color:var(--alert)}
+
+  dl.tally{margin:0;font-size:14px}
+  dl.tally div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+  dl.tally dt{color:var(--soft)}
+  dl.tally dd{margin:0;font-weight:500;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .go{
+    width:100%;padding:11px 14px;margin-top:14px;
+    font:inherit;font-size:15px;font-weight:500;
+    color:#fff;background:var(--accent);
+    border:0;border-radius:4px;cursor:pointer;
+  }
+  .go:hover:not(:disabled){background:var(--accent-deep)}
+  .go:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .go:disabled{background:#B4BAC4;cursor:default}
+
+  #status{margin:12px 0 0;font-size:13.5px;min-height:1.2em}
+  #status.err{color:var(--alert)}
+
+  .verdict{
+    margin:12px 0 0;padding:10px 12px;border-radius:4px;font-size:13.5px;line-height:1.45;
+    background:var(--accent-wash);color:var(--accent-deep);
+  }
+  .verdict.warn{background:var(--alert-wash);color:var(--alert)}
+
+  .again{display:inline-block;margin-top:6px;font-size:14px;color:var(--accent)}
+
+  .note{margin:14px 0 0;font-size:13px;color:var(--soft);line-height:1.45}
+
+  .empty{padding:22px 4px;color:var(--soft);font-size:14.5px;max-width:62ch}
+  .empty b{color:var(--ink);font-weight:500}
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <h1>Redact PDF</h1>
+    <p>Black out what shouldn't be seen. Everything runs in this tab &mdash; your file is never uploaded.</p>
+  </header>
+
+  <div class="surface">
+
+    <section>
+      <div id="intro">
+        <button class="drop" id="drop" type="button">
+          <span class="sheetmark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <b>Drop a PDF here, or click to choose</b>
+          <span>Then drag boxes over anything you want gone</span>
+        </button>
+        <p class="empty">
+          <b>How the masking is made permanent.</b> On export every page is redrawn as a flat picture with
+          your boxes painted into the pixels. The original text, fonts, links, form fields, bookmarks and
+          document properties are not carried over, so nothing under a box can be selected, searched,
+          copied or recovered.
+        </p>
+      </div>
+      <input type="file" id="picker" accept="application/pdf,.pdf" hidden>
+
+      <div id="work" hidden>
+        <div class="toolbar">
+          <h2 id="docname"></h2>
+          <span class="filler"></span>
+          <span class="seg" role="group" aria-label="Pointer mode">
+            <button type="button" id="modeDraw" aria-pressed="true">Draw boxes</button>
+            <button type="button" id="modePan" aria-pressed="false">Scroll</button>
+          </span>
+          <button class="plain" id="undo" disabled title="Ctrl+Z">Undo</button>
+          <button class="plain" id="clearAll" disabled>Clear masks</button>
+          <button class="plain" id="another">Open another</button>
+        </div>
+        <div class="pages" id="pages"></div>
+      </div>
+    </section>
+
+    <aside class="panel" id="panel">
+      <div class="block">
+        <h2>Document</h2>
+        <dl class="tally">
+          <div><dt>File</dt><dd id="tName">&mdash;</dd></div>
+          <div><dt>Pages</dt><dd id="tPages">0</dd></div>
+          <div><dt>Masks</dt><dd id="tMasks">0</dd></div>
+        </dl>
+      </div>
+
+      <div class="block">
+        <h3>Find and mask text</h3>
+        <form class="findrow" id="findForm">
+          <input type="text" id="q" placeholder="Name, account no., &hellip;" spellcheck="false" aria-label="Text to mask">
+          <button class="btn" id="findGo" type="submit" disabled>Mask</button>
+        </form>
+        <label class="check"><input type="checkbox" id="matchCase"> Match case</label>
+        <div class="chips">
+          <button class="chip" type="button" data-preset="email" disabled>Emails</button>
+          <button class="chip" type="button" data-preset="phone" disabled>Phone numbers</button>
+          <button class="chip" type="button" data-preset="digits" disabled>Numbers with 6+ digits</button>
+        </div>
+        <p class="tiny" id="findMsg">Boxes are placed over every match on every page. Check them by eye &mdash; scanned pages have no text to search.</p>
+      </div>
+
+      <div class="block">
+        <div class="two">
+          <div>
+            <label for="color">Mask colour</label>
+            <select id="color">
+              <option value="black">Black</option>
+              <option value="white">White</option>
+            </select>
+          </div>
+          <div>
+            <label for="dpi">Output quality</label>
+            <select id="dpi">
+              <option value="150">Standard</option>
+              <option value="220" selected>High</option>
+              <option value="300">Print</option>
+            </select>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="keepText" checked> Keep text outside the masks selectable and searchable</label>
+        <label class="check"><input type="checkbox" id="onlyMasked"> Leave pages without masks exactly as they are</label>
+      </div>
+
+      <div class="block">
+        <label for="fname">File name</label>
+        <input type="text" id="fname" value="redacted.pdf" spellcheck="false">
+        <button class="go" id="go" disabled>Redact and download</button>
+        <p id="status" role="status" aria-live="polite"></p>
+        <div id="verdict" hidden></div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var PDFLib = window.PDFLib;
+  var pdfjsLib = window.pdfjsLib;
+  var WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  var doc = null;        // { name, bytes, pdf, pages:[{w,h,el,overlay,canvas,rendered,text}] }
+  var masks = [];        // { id, page, x, y, w, h } — fractions of the page's displayed size
+  var history = [];      // undo stack
+  var seq = 0;
+  var busy = false;
+  var drawMode = true;
+  var lastURL = null;
+  var observer = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var el = {
+    intro: $('intro'), drop: $('drop'), picker: $('picker'), work: $('work'),
+    pages: $('pages'), docname: $('docname'),
+    modeDraw: $('modeDraw'), modePan: $('modePan'),
+    undo: $('undo'), clearAll: $('clearAll'), another: $('another'),
+    tName: $('tName'), tPages: $('tPages'), tMasks: $('tMasks'),
+    findForm: $('findForm'), q: $('q'), findGo: $('findGo'), matchCase: $('matchCase'),
+    findMsg: $('findMsg'), color: $('color'), dpi: $('dpi'), onlyMasked: $('onlyMasked'), keepText: $('keepText'),
+    fname: $('fname'), go: $('go'), status: $('status'), verdict: $('verdict')
+  };
+
+  /* ---------- helpers ---------- */
+
+  function say(msg, isError) {
+    el.status.textContent = msg || '';
+    el.status.className = isError ? 'err' : '';
+  }
+  function findSay(msg, isError) {
+    el.findMsg.textContent = msg;
+    el.findMsg.className = 'tiny' + (isError ? ' err' : '');
+  }
+  function breathe() {
+    return new Promise(function (r) { requestAnimationFrame(function () { setTimeout(r, 0); }); });
+  }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+
+  // Load the worker through a blob so it also works when this file is opened from disk.
+  async function setupWorker() {
+    try {
+      var res = await fetch(WORKER);
+      var code = await res.text();
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+    } catch (e) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER;
+    }
+  }
+
+  var workerReady = null;
+
+  async function openPdf(bytes) {
+    await workerReady;
+    var task = pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false });
+    task.onPassword = function (update, reason) {
+      var p = window.prompt(reason === pdfjsLib.PasswordResponses.INCORRECT_PASSWORD
+        ? 'That password did not work. Try again:'
+        : 'This PDF is password protected. Enter its password:');
+      if (p === null) task.destroy(); else update(p);
+    };
+    return task.promise;
+  }
+
+  /* ---------- state rendering ---------- */
+
+  function refresh() {
+    var has = !!doc;
+    el.tName.textContent = has ? doc.name : '—';
+    el.tName.title = has ? doc.name : '';
+    el.tPages.textContent = has ? doc.pages.length : 0;
+    el.tMasks.textContent = masks.length;
+    el.undo.disabled = busy || !history.length;
+    el.clearAll.disabled = busy || !masks.length;
+    el.go.disabled = busy || !has;
+    el.findGo.disabled = busy || !has || !el.q.value.trim();
+    Array.prototype.forEach.call(document.querySelectorAll('[data-preset]'), function (b) {
+      b.disabled = busy || !has;
+    });
+  }
+
+  function paintPage(i) {
+    var p = doc.pages[i];
+    var white = el.color.value === 'white';
+    Array.prototype.slice.call(p.overlay.querySelectorAll('.mask:not(.ghost)')).forEach(function (n) { n.remove(); });
+    masks.forEach(function (m) {
+      if (m.page !== i) return;
+      var d = document.createElement('div');
+      d.className = 'mask' + (white ? ' white' : '');
+      d.dataset.id = m.id;
+      d.style.left = (m.x * 100) + '%';
+      d.style.top = (m.y * 100) + '%';
+      d.style.width = (m.w * 100) + '%';
+      d.style.height = (m.h * 100) + '%';
+      var x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'x';
+      x.setAttribute('aria-label', 'Remove this mask');
+      x.innerHTML = '<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
+      d.appendChild(x);
+      p.overlay.appendChild(d);
+    });
+  }
+
+  function paintAll() { if (doc) doc.pages.forEach(function (_, i) { paintPage(i); }); }
+
+  function addMasks(list) {
+    if (!list.length) return;
+    list.forEach(function (m) { m.id = 'm' + (++seq); masks.push(m); });
+    history.push({ type: 'add', ids: list.map(function (m) { return m.id; }) });
+    var touched = {};
+    list.forEach(function (m) { touched[m.page] = 1; });
+    Object.keys(touched).forEach(function (k) { paintPage(+k); });
+    refresh();
+  }
+
+  function removeMasks(ids, record) {
+    var gone = masks.filter(function (m) { return ids.indexOf(m.id) > -1; });
+    if (!gone.length) return;
+    masks = masks.filter(function (m) { return ids.indexOf(m.id) < 0; });
+    if (record) history.push({ type: 'remove', masks: gone });
+    var touched = {};
+    gone.forEach(function (m) { touched[m.page] = 1; });
+    Object.keys(touched).forEach(function (k) { paintPage(+k); });
+    refresh();
+  }
+
+  function undo() {
+    var h = history.pop();
+    if (!h) return;
+    if (h.type === 'add') removeMasks(h.ids, false);
+    else {
+      h.masks.forEach(function (m) { masks.push(m); });
+      paintAll();
+      refresh();
+    }
+  }
+
+  /* ---------- loading a document ---------- */
+
+  async function load(fileList) {
+    var file = Array.prototype.filter.call(fileList, function (f) {
+      return f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+    })[0];
+    if (!file) { say('That was not a PDF.', true); return; }
+    if (busy) return;
+
+    busy = true;
+    refresh();
+    say('Opening ' + file.name + '…');
+    el.verdict.hidden = true;
+
+    try {
+      var bytes = new Uint8Array(await file.arrayBuffer());
+      var pdf = await openPdf(bytes);
+
+      if (doc && doc.pdf) doc.pdf.destroy();
+      if (observer) observer.disconnect();
+      masks = []; history = [];
+      el.pages.innerHTML = '';
+
+      doc = { name: file.name, bytes: bytes, pdf: pdf, pages: [] };
+      el.fname.value = file.name.replace(/\.pdf$/i, '') + ' (redacted).pdf';
+      el.docname.textContent = file.name;
+
+      observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) renderPreview(+e.target.dataset.index);
+        });
+      }, { rootMargin: '600px 0px' });
+
+      for (var i = 0; i < pdf.numPages; i++) {
+        var page = await pdf.getPage(i + 1);
+        var vp = page.getViewport({ scale: 1 });
+        var box = document.createElement('div');
+        box.className = 'page';
+        box.dataset.index = i;
+        box.style.aspectRatio = vp.width + ' / ' + vp.height;
+        box.innerHTML = '<span class="num">' + (i + 1) + '</span><canvas></canvas>' +
+                        '<div class="overlay' + (drawMode ? ' draw' : '') + '"></div>';
+        el.pages.appendChild(box);
+        doc.pages.push({
+          w: vp.width, h: vp.height, el: box,
+          canvas: box.querySelector('canvas'),
+          overlay: box.querySelector('.overlay'),
+          rendered: false, text: null
+        });
+        observer.observe(box);
+      }
+
+      el.intro.hidden = true;
+      el.work.hidden = false;
+      say('');
+      findSay('Boxes are placed over every match on every page. Check them by eye — scanned pages have no text to search.');
+    } catch (err) {
+      say(err && err.name === 'PasswordException'
+        ? 'The PDF stays locked without its password.'
+        : 'This file could not be opened — it may be damaged.', true);
+    } finally {
+      busy = false;
+      refresh();
+    }
+  }
+
+  async function renderPreview(i) {
+    var p = doc.pages[i];
+    if (p.rendered) return;
+    p.rendered = true;
+    var page = await doc.pdf.getPage(i + 1);
+    var cssW = p.el.clientWidth || 800;
+    var scale = Math.min(3, (cssW * (window.devicePixelRatio || 1)) / p.w);
+    var vp = page.getViewport({ scale: scale });
+    p.canvas.width = Math.floor(vp.width);
+    p.canvas.height = Math.floor(vp.height);
+    await page.render({ canvasContext: p.canvas.getContext('2d'), viewport: vp }).promise;
+  }
+
+  /* ---------- drawing boxes ---------- */
+
+  var drag = null;
+
+  function frac(e, overlay) {
+    var r = overlay.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)),
+      y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)),
+      W: r.width, H: r.height
+    };
+  }
+
+  el.pages.addEventListener('pointerdown', function (e) {
+    if (!drawMode || busy || e.button !== 0) return;
+    if (e.target.closest('.x')) return;
+    var overlay = e.target.closest('.overlay');
+    if (!overlay) return;
+    e.preventDefault();
+    var start = frac(e, overlay);
+    var ghost = document.createElement('div');
+    ghost.className = 'mask ghost';
+    overlay.appendChild(ghost);
+    overlay.setPointerCapture(e.pointerId);
+    drag = { overlay: overlay, start: start, ghost: ghost, rect: null,
+             page: +overlay.parentNode.dataset.index };
+  });
+
+  el.pages.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var now = frac(e, drag.overlay);
+    var r = {
+      x: Math.min(drag.start.x, now.x), y: Math.min(drag.start.y, now.y),
+      w: Math.abs(now.x - drag.start.x), h: Math.abs(now.y - drag.start.y),
+      W: now.W, H: now.H
+    };
+    drag.rect = r;
+    var g = drag.ghost.style;
+    g.left = r.x * 100 + '%'; g.top = r.y * 100 + '%';
+    g.width = r.w * 100 + '%'; g.height = r.h * 100 + '%';
+  });
+
+  function endDrag() {
+    if (!drag) return;
+    var d = drag;
+    drag = null;
+    d.ghost.remove();
+    var r = d.rect;
+    if (r && r.w * r.W >= 4 && r.h * r.H >= 4) {
+      addMasks([{ page: d.page, x: r.x, y: r.y, w: r.w, h: r.h }]);
+    }
+  }
+  el.pages.addEventListener('pointerup', endDrag);
+  el.pages.addEventListener('pointercancel', endDrag);
+
+  el.pages.addEventListener('click', function (e) {
+    var x = e.target.closest('.x');
+    if (!x) return;
+    removeMasks([x.closest('.mask').dataset.id], true);
+  });
+
+  function setMode(draw) {
+    drawMode = draw;
+    el.modeDraw.setAttribute('aria-pressed', String(draw));
+    el.modePan.setAttribute('aria-pressed', String(!draw));
+    if (doc) doc.pages.forEach(function (p) { p.overlay.classList.toggle('draw', draw); });
+  }
+  el.modeDraw.addEventListener('click', function () { setMode(true); });
+  el.modePan.addEventListener('click', function () { setMode(false); });
+
+  // On touch screens start in scroll mode, so a swipe does not draw a box.
+  if (window.matchMedia && window.matchMedia('(pointer:coarse)').matches) setMode(false);
+
+  /* ---------- find text ---------- */
+
+  async function pageText(i) {
+    var p = doc.pages[i];
+    if (p.text) return p.text;
+    var page = await doc.pdf.getPage(i + 1);
+    var vp = page.getViewport({ scale: 1 });
+    var tc = await page.getTextContent();
+    var str = '', map = [];
+    tc.items.forEach(function (it) {
+      if (typeof it.str !== 'string') return;
+      if (it.str.length) {
+        map.push({ item: it, start: str.length, end: str.length + it.str.length });
+        str += it.str;
+      }
+      if (it.hasEOL) str += '\n';
+    });
+    p.text = { str: str, map: map, vp: vp, styles: tc.styles || {} };
+    return p.text;
+  }
+
+  // Real glyph widths are not uniform ("i" vs "W"), so measure the run with a
+  // similar font family to find where characters a and b sit inside the item.
+  var measureCtx = document.createElement('canvas').getContext('2d');
+  function runFraction(str, n, family) {
+    if (n <= 0) return 0;
+    if (n >= str.length) return 1;
+    measureCtx.font = '100px ' + (family || 'sans-serif');
+    var whole = measureCtx.measureText(str).width;
+    return whole ? measureCtx.measureText(str.slice(0, n)).width / whole : n / str.length;
+  }
+
+  // Box around characters [a, b) of a text item, as fractions of the page.
+  function charBox(item, a, b, vp, family, padK) {
+    var t = pdfjsLib.Util.transform(vp.transform, item.transform);
+    var fh = Math.hypot(t[2], t[3]);
+    var sx = Math.hypot(t[0], t[1]);
+    if (!fh || !sx) return null;
+    var u = [t[0] / sx, t[1] / sx];   // along the text
+    var v = [t[2] / fh, t[3] / fh];   // towards the top of the glyphs
+    var len = item.str.length || 1;
+    var width = item.width || fh * 0.5 * len;
+    var pad = fh * (padK == null ? 0.25 : padK);
+    var t0 = width * runFraction(item.str, a, family) - pad;
+    var t1 = width * runFraction(item.str, b, family) + pad;
+    var s0 = -0.28 * fh, s1 = 0.98 * fh;
+    var xs = [], ys = [];
+    [[t0, s0], [t1, s0], [t0, s1], [t1, s1]].forEach(function (c) {
+      xs.push(t[4] + u[0] * c[0] + v[0] * c[1]);
+      ys.push(t[5] + u[1] * c[0] + v[1] * c[1]);
+    });
+    var x0 = Math.max(0, Math.min.apply(null, xs)), x1 = Math.min(vp.width, Math.max.apply(null, xs));
+    var y0 = Math.max(0, Math.min.apply(null, ys)), y1 = Math.min(vp.height, Math.max.apply(null, ys));
+    if (x1 <= x0 || y1 <= y0) return null;
+    return { x: x0 / vp.width, y: y0 / vp.height, w: (x1 - x0) / vp.width, h: (y1 - y0) / vp.height };
+  }
+
+  var PRESETS = {
+    email:  { label: 'email addresses', re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g },
+    phone:  { label: 'phone numbers',   re: /(?:\+\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)[\s.-]?)?\d{2,4}[\s.-]\d{3,4}[\s.-]?\d{0,4}\b/g },
+    digits: { label: 'long numbers',    re: /\d(?:[\d\s-]*\d){5,}/g }
+  };
+
+  async function maskMatches(re, label) {
+    if (!doc || busy) return;
+    busy = true;
+    refresh();
+    var found = [], hitPages = {}, count = 0, anyText = false;
+    try {
+      for (var i = 0; i < doc.pages.length; i++) {
+        findSay('Searching page ' + (i + 1) + ' of ' + doc.pages.length + '…');
+        var tx = await pageText(i);
+        if (tx.str.trim()) anyText = true;
+        re.lastIndex = 0;
+        var m;
+        while ((m = re.exec(tx.str))) {
+          if (!m[0].length) { re.lastIndex++; continue; }
+          var s = m.index, e = s + m[0].length;
+          count++;
+          hitPages[i] = 1;
+          tx.map.forEach(function (seg) {
+            if (seg.end <= s || seg.start >= e) return;
+            var a = Math.max(s, seg.start) - seg.start;
+            var b = Math.min(e, seg.end) - seg.start;
+            // Skip pieces that are only whitespace.
+            if (!seg.item.str.slice(a, b).trim()) return;
+            var st = tx.styles[seg.item.fontName];
+            var box = charBox(seg.item, a, b, tx.vp, st && st.fontFamily);
+            if (box) { box.page = i; found.push(box); }
+          });
+        }
+        if (i % 5 === 4) await breathe();
+      }
+    } finally {
+      busy = false;
+    }
+    addMasks(found);
+    refresh();
+    var np = Object.keys(hitPages).length;
+    if (!anyText) {
+      findSay('This PDF has no searchable text (it is probably scanned). Draw the boxes by hand instead.', true);
+    } else if (!count) {
+      findSay('No ' + label + ' found.', true);
+    } else {
+      findSay('Masked ' + plural(count, 'match', 'matches') + ' of ' + label + ' on ' +
+              plural(np, 'page') + '. Scroll through to check the boxes cover everything.');
+    }
+  }
+
+  function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  el.findForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var q = el.q.value.trim();
+    if (!q) return;
+    // Let any run of spaces in the query also match line breaks or no gap at all.
+    var pattern = q.split(/\s+/).map(escapeRe).join('\\s*');
+    var re = new RegExp(pattern, el.matchCase.checked ? 'g' : 'gi');
+    maskMatches(re, '“' + q + '”');
+  });
+  el.q.addEventListener('input', refresh);
+
+  document.querySelector('.chips').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-preset]');
+    if (!b) return;
+    var p = PRESETS[b.dataset.preset];
+    maskMatches(new RegExp(p.re.source, 'g'), p.label);
+  });
+
+  /* ---------- toolbar ---------- */
+
+  el.undo.addEventListener('click', undo);
+  el.clearAll.addEventListener('click', function () {
+    removeMasks(masks.map(function (m) { return m.id; }), true);
+  });
+  el.another.addEventListener('click', function () { el.picker.click(); });
+  el.color.addEventListener('change', paintAll);
+
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+      if (history.length) { e.preventDefault(); undo(); }
+    }
+  });
+
+  /* ---------- picking and dropping ---------- */
+
+  el.drop.addEventListener('click', function () { el.picker.click(); });
+  el.picker.addEventListener('change', function () {
+    if (el.picker.files.length) load(el.picker.files);
+    el.picker.value = '';
+  });
+
+  var hover = 0;
+  function carriesFiles(e) {
+    return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') > -1;
+  }
+  document.addEventListener('dragenter', function (e) {
+    if (!carriesFiles(e)) return;
+    hover++;
+    el.drop.classList.add('hot');
+  });
+  document.addEventListener('dragover', function (e) { if (carriesFiles(e)) e.preventDefault(); });
+  document.addEventListener('dragleave', function (e) {
+    if (!carriesFiles(e)) return;
+    if (--hover <= 0) { hover = 0; el.drop.classList.remove('hot'); }
+  });
+  document.addEventListener('drop', function (e) {
+    if (!carriesFiles(e)) return;
+    e.preventDefault();
+    hover = 0;
+    el.drop.classList.remove('hot');
+    load(e.dataTransfer.files);
+  });
+
+  /* ---------- export ---------- */
+
+  function canvasToJpeg(canvas) {
+    return new Promise(function (resolve, reject) {
+      canvas.toBlob(function (b) {
+        if (!b) return reject(new Error('The page image could not be encoded'));
+        b.arrayBuffer().then(resolve, reject);
+      }, 'image/jpeg', 0.9);
+    });
+  }
+
+  function overlaps(b, m) {
+    return b.x < m.x + m.w && b.x + b.w > m.x && b.y < m.y + m.h && b.y + b.h > m.y;
+  }
+
+  // Rebuild the page's text as an invisible layer over the image, leaving out
+  // every character whose glyph box touches a mask. Masked text is never written.
+  async function addTextLayer(outPage, i, font) {
+    var P = PDFLib;
+    var tx = await pageText(i);
+    var H = tx.vp.height;
+    var pm = masks.filter(function (m) { return m.page === i; });
+    var fontKey = outPage.node.newFontDictionary(font.name, font.ref);
+    var ops = [P.beginText(), P.setTextRenderingMode(P.TextRenderingMode.Invisible)];
+    var written = 0;
+
+    tx.map.forEach(function (seg) {
+      var it = seg.item, str = it.str.replace(/\s/g, ' ');
+      var st = tx.styles[it.fontName], fam = st && st.fontFamily;
+      var t = pdfjsLib.Util.transform(tx.vp.transform, it.transform);
+      var fh = Math.hypot(t[2], t[3]), sx = Math.hypot(t[0], t[1]);
+      if (!fh || !sx) return;
+
+      var keep = [];
+      for (var k = 0; k < str.length; k++) {
+        var ok = true;
+        var b = charBox(it, k, k + 1, tx.vp, fam, 0);
+        if (b && pm.some(function (m) { return overlaps(b, m); })) ok = false;
+        if (ok && str[k] !== ' ') { try { font.encodeText(str[k]); } catch (e) { ok = false; } }
+        keep.push(ok);
+      }
+
+      var w = it.width || fh * 0.5 * str.length;
+      var ux = t[0] / sx, uy = t[1] / sx, vx = t[2] / fh, vy = t[3] / fh;
+      for (var a = 0; a < str.length;) {
+        if (!keep[a]) { a++; continue; }
+        var e = a;
+        while (e < str.length && keep[e]) e++;
+        var text = str.slice(a, e);
+        if (text.trim()) {
+          var f0 = runFraction(str, a, fam), f1 = runFraction(str, e, fam);
+          var natural = font.widthOfTextAtSize(text, fh);
+          var squeeze = natural ? Math.max(1, Math.min(1000, 100 * w * (f1 - f0) / natural)) : 100;
+          var ox = t[4] + ux * w * f0, oy = t[5] + uy * w * f0;
+          ops.push(
+            P.setFontAndSize(fontKey, fh),
+            P.setCharacterSqueeze(squeeze),
+            // pdf.js space is y-down; PDF space is y-up.
+            P.setTextMatrix(ux, -uy, vx, -vy, ox, H - oy),
+            P.showText(font.encodeText(text))
+          );
+          written += text.replace(/\s/g, '').length;
+        }
+        a = e;
+      }
+    });
+
+    ops.push(P.endText());
+    if (written) outPage.pushOperators.apply(outPage, ops);
+  }
+
+  async function flattenPage(out, i, dpi, white, font) {
+    var page = await doc.pdf.getPage(i + 1);
+    var base = page.getViewport({ scale: 1 });
+    var scale = dpi / 72;
+    // Keep any single page under ~40 megapixels so the browser does not refuse the canvas.
+    var maxPx = 40e6;
+    if (base.width * base.height * scale * scale > maxPx) {
+      scale = Math.sqrt(maxPx / (base.width * base.height));
+    }
+    var vp = page.getViewport({ scale: scale });
+    var c = document.createElement('canvas');
+    c.width = Math.ceil(vp.width);
+    c.height = Math.ceil(vp.height);
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({
+      canvasContext: ctx, viewport: vp,
+      annotationMode: pdfjsLib.AnnotationMode.ENABLE
+    }).promise;
+
+    // Paint the masks into the pixels, rounded outwards so no edge pixel survives.
+    ctx.fillStyle = white ? '#fff' : '#000';
+    masks.forEach(function (m) {
+      if (m.page !== i) return;
+      var x0 = Math.floor(m.x * c.width) - 1, y0 = Math.floor(m.y * c.height) - 1;
+      var x1 = Math.ceil((m.x + m.w) * c.width) + 1, y1 = Math.ceil((m.y + m.h) * c.height) + 1;
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    });
+
+    var jpg = await out.embedJpg(await canvasToJpeg(c));
+    c.width = c.height = 0;
+    var p = out.addPage([base.width, base.height]);
+    p.drawImage(jpg, { x: 0, y: 0, width: base.width, height: base.height });
+    if (font) await addTextLayer(p, i, font);
+  }
+
+  // Re-open the output and look at every character it carries: count them, and
+  // count any whose centre falls inside a mask (those would be leaks).
+  async function inspect(bytes) {
+    await workerReady;
+    var check = await pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
+    var total = 0, leaks = 0;
+    for (var i = 0; i < check.numPages; i++) {
+      var page = await check.getPage(i + 1);
+      var vp = page.getViewport({ scale: 1 });
+      var tc = await page.getTextContent();
+      var pm = masks.filter(function (m) { return m.page === i; });
+      tc.items.forEach(function (it) {
+        if (!it.str) return;
+        for (var k = 0; k < it.str.length; k++) {
+          if (/\s/.test(it.str[k])) continue;
+          total++;
+          if (!pm.length) continue;
+          var b = charBox(it, k, k + 1, vp, null, 0);
+          if (!b) continue;
+          var cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+          if (pm.some(function (m) { return cx > m.x && cx < m.x + m.w && cy > m.y && cy < m.y + m.h; })) leaks++;
+        }
+      });
+    }
+    check.destroy();
+    return { total: total, leaks: leaks };
+  }
+
+  el.go.addEventListener('click', async function () {
+    if (!doc || busy) return;
+    var onlyMasked = el.onlyMasked.checked;
+    var keepText = el.keepText.checked;
+    var dpi = +el.dpi.value;
+    var white = el.color.value === 'white';
+
+    if (!masks.length && !window.confirm('No masks have been drawn. Export a flattened copy anyway?')) return;
+
+    busy = true;
+    refresh();
+    el.verdict.hidden = true;
+    var old = el.go.textContent;
+    el.go.textContent = 'Redacting…';
+    if (lastURL) { URL.revokeObjectURL(lastURL); lastURL = null; }
+
+    try {
+      // A fresh document: no metadata, outline, attachments, scripts or form data from the source.
+      var out = await PDFLib.PDFDocument.create({ updateMetadata: false });
+      var masked = {};
+      masks.forEach(function (m) { masked[m.page] = 1; });
+
+      var font = keepText ? await out.embedFont(PDFLib.StandardFonts.Helvetica) : null;
+      var src = null, kept = 0;
+      if (onlyMasked) {
+        try { src = await PDFLib.PDFDocument.load(doc.bytes); }
+        catch (e) { src = null; }   // encrypted or odd file: flatten everything instead
+      }
+
+      for (var i = 0; i < doc.pages.length; i++) {
+        say('Page ' + (i + 1) + ' of ' + doc.pages.length + '…');
+        await breathe();
+        if (src && !masked[i]) {
+          var cp = await out.copyPages(src, [i]);
+          out.addPage(cp[0]);
+          kept++;
+        } else {
+          await flattenPage(out, i, dpi, white, font);
+        }
+      }
+
+      say('Writing the file…');
+      await breathe();
+      var bytes = await out.save();
+
+      say('Checking the result…');
+      var result = await inspect(bytes);
+
+      var blob = new Blob([bytes], { type: 'application/pdf' });
+      lastURL = URL.createObjectURL(blob);
+      var name = (el.fname.value || 'redacted').trim().replace(/[\\/:*?"<>|]/g, '-');
+      if (!/\.pdf$/i.test(name)) name += '.pdf';
+
+      var a = document.createElement('a');
+      a.href = lastURL; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+
+      var kb = blob.size < 1048576 ? Math.round(blob.size / 1024) + ' KB' : (blob.size / 1048576).toFixed(1) + ' MB';
+      say('Saved ' + name + ' (' + kb + ') with ' + plural(masks.length, 'mask') + '. ');
+      var again = document.createElement('a');
+      again.href = lastURL; again.download = name;
+      again.className = 'again'; again.textContent = 'Download again';
+      el.status.appendChild(again);
+
+      el.verdict.hidden = false;
+      if (result.leaks) {
+        el.verdict.className = 'verdict warn';
+        el.verdict.textContent = 'Warning: ' + plural(result.leaks, 'character') +
+          ' of text sit under your masks in the output. Do not share this file. Untick \u201cKeep text outside the masks selectable\u201d and export again.';
+      } else if (!result.total) {
+        el.verdict.className = 'verdict';
+        el.verdict.textContent = 'Verified: the output contains no selectable or searchable text at all. Every page is a flat image.';
+      } else {
+        el.verdict.className = 'verdict';
+        el.verdict.textContent = 'Verified: nothing under your masks is in the file. ' +
+          plural(result.total, 'character') + ' of unmasked text remain selectable and searchable.';
+      }
+    } catch (err) {
+      say('Redaction failed: ' + (err && err.message ? err.message : 'unknown problem') +
+          '. Try a lower output quality.', true);
+    } finally {
+      busy = false;
+      el.go.textContent = old;
+      refresh();
+    }
+  });
+
+  /* ---------- start ---------- */
+
+  if (!PDFLib || !pdfjsLib) {
+    say('The PDF engine did not load. Check your connection and reload the page.', true);
+    el.drop.disabled = true;
+  } else {
+    workerReady = setupWorker();
+  }
+  refresh();
+})();
+</script>
+</body>
+</html>
